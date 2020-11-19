@@ -1,5 +1,0 @@
-px4_controller
-/home/igor/src/catkin_ws/devel/.private/px4_controller/cmake.lock /home/igor/src/catkin_ws/devel/./cmake.lock
-/home/igor/src/catkin_ws/devel/.private/px4_controller/share/px4_controller/cmake/px4_controllerConfig.cmake /home/igor/src/catkin_ws/devel/share/px4_controller/cmake/px4_controllerConfig.cmake
-/home/igor/src/catkin_ws/devel/.private/px4_controller/share/px4_controller/cmake/px4_controllerConfig-version.cmake /home/igor/src/catkin_ws/devel/share/px4_controller/cmake/px4_controllerConfig-version.cmake
-/home/igor/src/catkin_ws/devel/.private/px4_controller/lib/pkgconfig/px4_controller.pc /home/igor/src/catkin_ws/devel/lib/pkgconfig/px4_controller.pc
