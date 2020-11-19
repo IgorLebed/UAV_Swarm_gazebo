@@ -1,0 +1,1 @@
+/home/igor/src/catkin_ws/devel/.private/offboard_pkg/lib/pkgconfig/offboard_pkg.pc

@@ -1,0 +1,6 @@
+Linked: (/home/igor/src/catkin_ws/devel/.private/mavros_extras/share/mavros_extras/cmake/mavros_extrasConfig.cmake, /home/igor/src/catkin_ws/devel/share/mavros_extras/cmake/mavros_extrasConfig.cmake)
+Linked: (/home/igor/src/catkin_ws/devel/.private/mavros_extras/share/mavros_extras/cmake/mavros_extrasConfig-version.cmake, /home/igor/src/catkin_ws/devel/share/mavros_extras/cmake/mavros_extrasConfig-version.cmake)
+Linked: (/home/igor/src/catkin_ws/devel/.private/mavros_extras/lib/libmavros_extras.so, /home/igor/src/catkin_ws/devel/lib/libmavros_extras.so)
+Linked: (/home/igor/src/catkin_ws/devel/.private/mavros_extras/lib/pkgconfig/mavros_extras.pc, /home/igor/src/catkin_ws/devel/lib/pkgconfig/mavros_extras.pc)
+Linked: (/home/igor/src/catkin_ws/devel/.private/mavros_extras/lib/mavros_extras/visualization, /home/igor/src/catkin_ws/devel/lib/mavros_extras/visualization)
+Linked: (/home/igor/src/catkin_ws/devel/.private/mavros_extras/lib/mavros_extras/servo_state_publisher, /home/igor/src/catkin_ws/devel/lib/mavros_extras/servo_state_publisher)

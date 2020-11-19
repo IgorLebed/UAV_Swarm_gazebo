@@ -1,0 +1,4 @@
+Symlinking /home/igor/src/catkin_ws/devel/share/offboard_pkg/cmake/offboard_pkgConfig.cmake
+Symlinking /home/igor/src/catkin_ws/devel/share/offboard_pkg/cmake/offboard_pkgConfig-version.cmake
+Symlinking /home/igor/src/catkin_ws/devel/lib/offboard_pkg/offboard_node
+Symlinking /home/igor/src/catkin_ws/devel/lib/pkgconfig/offboard_pkg.pc
