@@ -1,0 +1,7 @@
+mavros/libmavconn
+/home/igor/src/catkin_ws/devel/.private/libmavconn/cmake.lock /home/igor/src/catkin_ws/devel/./cmake.lock
+/home/igor/src/catkin_ws/devel/.private/libmavconn/share/libmavconn/cmake/libmavconn-extras.cmake /home/igor/src/catkin_ws/devel/share/libmavconn/cmake/libmavconn-extras.cmake
+/home/igor/src/catkin_ws/devel/.private/libmavconn/share/libmavconn/cmake/libmavconnConfig-version.cmake /home/igor/src/catkin_ws/devel/share/libmavconn/cmake/libmavconnConfig-version.cmake
+/home/igor/src/catkin_ws/devel/.private/libmavconn/share/libmavconn/cmake/libmavconnConfig.cmake /home/igor/src/catkin_ws/devel/share/libmavconn/cmake/libmavconnConfig.cmake
+/home/igor/src/catkin_ws/devel/.private/libmavconn/lib/libmavconn.so /home/igor/src/catkin_ws/devel/lib/libmavconn.so
+/home/igor/src/catkin_ws/devel/.private/libmavconn/lib/pkgconfig/libmavconn.pc /home/igor/src/catkin_ws/devel/lib/pkgconfig/libmavconn.pc

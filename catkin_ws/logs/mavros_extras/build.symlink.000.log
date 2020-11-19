@@ -1,0 +1,6 @@
+Symlinking /home/igor/src/catkin_ws/devel/share/mavros_extras/cmake/mavros_extrasConfig.cmake
+Symlinking /home/igor/src/catkin_ws/devel/share/mavros_extras/cmake/mavros_extrasConfig-version.cmake
+Symlinking /home/igor/src/catkin_ws/devel/lib/libmavros_extras.so
+Symlinking /home/igor/src/catkin_ws/devel/lib/pkgconfig/mavros_extras.pc
+Symlinking /home/igor/src/catkin_ws/devel/lib/mavros_extras/visualization
+Symlinking /home/igor/src/catkin_ws/devel/lib/mavros_extras/servo_state_publisher

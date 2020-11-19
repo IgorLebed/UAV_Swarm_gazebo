@@ -1,0 +1,2 @@
+- setup-file:
+    local-name: /home/igor/src/catkin_ws/devel/.private/px4_controller/setup.sh

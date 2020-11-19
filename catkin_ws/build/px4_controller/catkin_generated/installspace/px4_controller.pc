@@ -1,0 +1,8 @@
+prefix=/home/igor/src/catkin_ws/install
+
+Name: px4_controller
+Description: Description of px4_controller
+Version: 0.0.0
+Cflags: 
+Libs: -L${prefix}/lib 
+Requires: 
