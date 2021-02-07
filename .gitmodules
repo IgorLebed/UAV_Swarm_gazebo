@@ -1,0 +1,4 @@
+[submodule "PX4_Autopilot"]
+	path = PX4_Autopilot
+	url = https://github.com/IgorLebed/PX4-Autopilot
+	branch = master
