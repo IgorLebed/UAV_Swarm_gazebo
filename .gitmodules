@@ -4,3 +4,6 @@
 [submodule "catkin_ws/src/mavlink"]
 	path = catkin_ws/src/mavlink
 	url = https://github.com/IgorLebed/mavlink.git
+[submodule "catkin_ws/src/mavros"]
+	path = catkin_ws/src/mavros
+	url = https://github.com/IgorLebed/mavros.git
