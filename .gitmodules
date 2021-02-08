@@ -1,3 +1,6 @@
 [submodule "Autopilot"]
 	path = Autopilot
 	url = https://github.com/IgorLebed/PX4-Autopilot
+[submodule "catkin_ws/src/mavlink"]
+	path = catkin_ws/src/mavlink
+	url = https://github.com/IgorLebed/mavlink.git
