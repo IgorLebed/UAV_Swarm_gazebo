@@ -5,7 +5,7 @@
 ## Properation
 ```
 cd $HOME
-mkdir src
+git clone https://github.com/IgorLebed/UAV_Swarm_gazebo.git --recursive
 ```
 ```
 cd UAV_Swarm_gazebo/Autopilot/
@@ -21,7 +21,7 @@ catkin build
 ### Test
 Connection(MAVROS)
 ```
-source ~/src/catkin_ws/devel/setup.bash
+source ~/UAV_Swarm_gazebo/catkin_ws/devel/setup.bash
 roslaunch mavros px4.launch fcu_url:="udp://:14540@127.0.0.1:14557"
 ```
 
