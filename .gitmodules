@@ -7,9 +7,6 @@
 [submodule "catkin_ws/src/mavros"]
 	path = catkin_ws/src/mavros
 	url = https://github.com/IgorLebed/mavros.git
-[submodule "catkin_ws/src/rrt_uav"]
-	path = catkin_ws/src/rrt_uav
-	url = https://github.com/ValeriiaIZH/rrt_uav.git
 [submodule "catkin_ws/src/px4_controller"]
 	path = catkin_ws/src/px4_controller
 	url = https://github.com/ValeriiaIZH/px4_controller
