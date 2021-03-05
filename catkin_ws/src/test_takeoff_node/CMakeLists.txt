@@ -208,3 +208,5 @@ include_directories(
 
 add_executable(takeoff_node src/test_takeoff_node.cpp)
 target_link_libraries(takeoff_node ${catkin_LIBRARIES})
+add_executable(boris-test-node src/boris-test-node.cpp)
+target_link_libraries(boris-test-node.cpp ${catkin_LIBRARIES})
