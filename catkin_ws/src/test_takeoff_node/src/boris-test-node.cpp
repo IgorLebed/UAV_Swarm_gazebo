@@ -3,21 +3,45 @@
 #include <mavros_msgs/CommandBool.h>
 #include <mavros_msgs/SetMode.h>
 #include <mavros_msgs/State.h>
-#include <cmath>
+#include <thread>
+#include <mutex>
 
 mavros_msgs::State current_state;
+geometry_msgs::PoseStamped pose;
+std::mutex mu;
 void state_cb(const mavros_msgs::State::ConstPtr &msg)
 {
     current_state = *msg;
 }
 
+void changePose(int x, int y, int z)
+{
+    mu.lock();
+    pose.pose.position.x = x;
+    pose.pose.position.y = y;
+    pose.pose.position.z = z;
+    mu.unlock();
+}
+
+void posePublisher(ros::Rate rate)
+{
+    ros::NodeHandle nh;
+    ros::Publisher local_pos_pub = nh.advertise<geometry_msgs::PoseStamped>("mavros/setpoint_position/local", 10);
+    while (ros::ok())
+    {
+        mu.lock();
+        local_pos_pub.publish(pose);
+        mu.unlock();
+        rate.sleep();
+    }
+}
+
 int main(int argc, char **argv)
 {
-    ros::init(argc, argv, "offb_node");
+    ros::init(argc, argv, "offb_node_boris");
     ros::NodeHandle nh;
 
     ros::Subscriber state_sub = nh.subscribe<mavros_msgs::State>("mavros/state", 10, state_cb);
-    ros::Publisher local_pos_pub = nh.advertise<geometry_msgs::PoseStamped>("mavros/setpoint_position/local", 10);
     ros::ServiceClient arming_client = nh.serviceClient<mavros_msgs::CommandBool>("mavros/cmd/arming");
     ros::ServiceClient set_mode_client = nh.serviceClient<mavros_msgs::SetMode>("mavros/set_mode");
 
@@ -29,30 +53,8 @@ int main(int argc, char **argv)
         rate.sleep();
     }
 
-    int radius = 2;
-    const double PI = 3.141592653589793;
-
-    geometry_msgs::PoseStamped start_pose;
-    geometry_msgs::PoseStamped pose[32];
-
-    start_pose.pose.position.x = 0;
-    start_pose.pose.position.y = 0;
-    start_pose.pose.position.z = 2;
-    for (int i = 0; i < 32; i++)
-    {
-        double cosinus = cos(PI / 16 * i);
-        double sinus = sin(PI / 16 * i);
-        pose[i].pose.position.x = radius * cosinus - radius;
-        pose[i].pose.position.y = radius * sinus;
-        pose[i].pose.position.z = 2;
-    }
-
-    for (int i = 0; ros::ok() && i < 32; i++)
-    {
-        local_pos_pub.publish(pose[i]);
-        ros::spinOnce();
-        rate.sleep();
-    }
+    changePose(0, 0, 0);
+    std::thread posePub(posePublisher, rate);
 
     mavros_msgs::SetMode offb_set_mode;
     offb_set_mode.request.custom_mode = "OFFBOARD";
@@ -61,7 +63,8 @@ int main(int argc, char **argv)
     arm_cmd.request.value = true;
 
     ros::Time last_request = ros::Time::now();
-
+    int xy = 2;
+    ros::Time changeXY = ros::Time::now();
     while (ros::ok())
     {
         if (current_state.mode != "OFFBOARD" &&
@@ -85,26 +88,23 @@ int main(int argc, char **argv)
                     ROS_INFO("Vehicle armed");
                 }
                 last_request = ros::Time::now();
-                break;
             }
         }
 
-        local_pos_pub.publish(start_pose);
-
-        ros::spinOnce();
-        rate.sleep();
-    }
-    for (double i = 0; ros::ok(); i += 0.2)
-    {
-        if (int(i) == 32)
+        // СМЕНА ПОЗИЦИИ
+        if (ros::Time::now() - changeXY > ros::Duration(5.0))
         {
-            i = 0;
-            ROS_INFO("CIRCLE");
+            changePose(xy, xy, 2);
+            xy *= -1;
+            changeXY = ros::Time::now();
         }
-        local_pos_pub.publish(pose[int(i)]);
+
         ros::spinOnce();
         rate.sleep();
     }
-
+    if (posePub.joinable())
+    {
+        posePub.join();
+    }
     return 0;
 }
