@@ -3,12 +3,11 @@
 #include <mavros_msgs/CommandBool.h>
 #include <mavros_msgs/SetMode.h>
 #include <mavros_msgs/State.h>
-#include <thread>
-#include <mutex>
+#include <boost/thread.hpp>
 
 mavros_msgs::State current_state;
 geometry_msgs::PoseStamped pose;
-std::mutex mu;
+boost::mutex mu;
 void state_cb(const mavros_msgs::State::ConstPtr &msg)
 {
     current_state = *msg;
@@ -54,7 +53,7 @@ int main(int argc, char **argv)
     }
 
     changePose(0, 0, 0);
-    std::thread posePub(posePublisher, rate);
+    boost::thread posePub(posePublisher, rate);
 
     mavros_msgs::SetMode offb_set_mode;
     offb_set_mode.request.custom_mode = "OFFBOARD";
