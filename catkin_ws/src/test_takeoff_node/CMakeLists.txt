@@ -207,4 +207,6 @@ include_directories(
 # catkin_add_nosetests(test)
 
 add_executable(takeoff_node src/test_takeoff_node.cpp)
+add_executable(two_points_flight src/two_points_flight.cpp)
 target_link_libraries(takeoff_node ${catkin_LIBRARIES})
+target_link_libraries(two_points_flight ${catkin_LIBRARIES})
