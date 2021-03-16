@@ -37,7 +37,7 @@ void posePublisher(ros::Rate rate)
 
 int main(int argc, char **argv)
 {
-    ros::init(argc, argv, "offb_node_boris");
+    ros::init(argc, argv, "two_points_flight");
     ros::NodeHandle nh;
 
     ros::Subscriber state_sub = nh.subscribe<mavros_msgs::State>("mavros/state", 10, state_cb);
@@ -90,7 +90,7 @@ int main(int argc, char **argv)
             }
         }
 
-        // СМЕНА ПОЗИЦИИ
+        // CHANGE OF POSITION
         if (ros::Time::now() - changeXY > ros::Duration(5.0))
         {
             changePose(xy, xy, 2);
