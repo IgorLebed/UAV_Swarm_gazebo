@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<launch>
+    <!--include file="$(find px4)/launch/multi_uav_mavros_sitl.launch"/-->
+
+    <node name="multiply_node_0" pkg="swarm_alg" type="uav_0.py" output="screen"/>
+    <node name="multiply_node_1" pkg="swarm_alg" type="uav_1.py" output="screen"/>
+    <node name="multiply_node_2" pkg="swarm_alg" type="uav_2.py" output="screen"/>
+
+</launch>
