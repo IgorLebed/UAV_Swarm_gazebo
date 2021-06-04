@@ -91,6 +91,13 @@ from threading import Thread
 from tf.transformations import quaternion_from_euler
 from std_msgs.msg import String
 
+
+class swarm_parametr(object):
+    def __init__(self):
+        super(swarm_parametr, self).__init__()
+        self.altutude_height = 2 
+        self.positions = ((0, 0, 0),(0,0,5),(-5,-5,5),(-6,-5,5),(-7,-5,5),(-8,-5,4),(-9,-5,1),(-9,-5,0))
+
 class MavrosOffboardPosctlTest_0(MavrosTestCommon):
 
     """
@@ -101,6 +108,7 @@ class MavrosOffboardPosctlTest_0(MavrosTestCommon):
 
     FIXME: add flight path assertion (needs transformation from ROS frame to NED)
     """
+    
 
     def setUp(self):
         super(MavrosOffboardPosctlTest_0, self).setUp()
@@ -114,7 +122,9 @@ class MavrosOffboardPosctlTest_0(MavrosTestCommon):
         self.pos_thread = Thread(target=self.send_pos, args=())
         self.pos_thread.daemon = True
         self.pos_thread.start()
-
+        global takeoff_height
+        takeoff_height = 2
+        
     def tearDown(self):
         super(MavrosOffboardPosctlTest_0, self).tearDown()
 
@@ -215,18 +225,22 @@ class MavrosOffboardPosctlTest_0(MavrosTestCommon):
         self.set_mode("OFFBOARD", 5)
         self.set_arm(True, 5)
         
-        rospy.loginfo("This is a slaver")
+        rospy.loginfo("This is a dungeon master")
+
+        takeoff_height = swarm_parametr().altutude_height
+        positions = swarm_parametr().positions
+        rospy.loginfo(takeoff_height)
+
         rospy.loginfo("run mission")  
+
         #positions = np.load('/home/valeriia/UAV_Swarm_gazebo/catkin_ws/src/px4_controller/rrt_pruning_smoothing/Code/rrt_sim_smooth_path_coords.npy',allow_pickle=True)
-        positions = ((0, 0, 0),(0,0,5),(-5,-5,5),(-6,-5,5),(-7,-5,5),(-8,-5,4),(-9,-5,1),(-9,-5,0))
         #positions = ((0, 0),(0,0),(-5,-5),(-6,-5),(-7,-5),(-8,-5),(-9,-5),(-9,-5))
-        
         #for i in xrange(len(positions)):
         #    positions[i][0]= positions[i][0]+3
         #positions = ((0, 0, 0),(0,0,5),(-5,-5,5),(-6,-5,5),(-7,-5,5),(-8,-5,4),(-9,-5,1),(-9,-5,0))
 
         for i in xrange(len(positions)):
-            self.reach_position(positions[i][0], positions[i][1], 5, 30) # X, Y, Z
+            self.reach_position(positions[i][0], positions[i][1], takeoff_height, 30) # X, Y, Z
             #self.reach_position(positions[i][0], positions[i][1], positions[i][2], 30)
             rospy.loginfo("%s" %(i))
             self.talker()

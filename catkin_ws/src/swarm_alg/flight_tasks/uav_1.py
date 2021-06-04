@@ -93,6 +93,7 @@ from tf.transformations import quaternion_from_euler
 from std_msgs.msg import String
 import uav_0 as uv
 
+
 class MavrosOffboardPosctlTest_1(MavrosTestCommon):
 
     """
@@ -104,6 +105,7 @@ class MavrosOffboardPosctlTest_1(MavrosTestCommon):
     FIXME: add flight path assertion (needs transformation from ROS frame to NED)
     """
 
+    
     def setUp(self):
         super(MavrosOffboardPosctlTest_1, self).setUp()
 
@@ -117,6 +119,9 @@ class MavrosOffboardPosctlTest_1(MavrosTestCommon):
         self.pos_thread.daemon = True
         self.pos_thread.start()
 
+        global takeoff_height
+        global positions
+        
     def tearDown(self):
         super(MavrosOffboardPosctlTest_1, self).tearDown()
 
@@ -219,22 +224,19 @@ class MavrosOffboardPosctlTest_1(MavrosTestCommon):
         self.log_topic_vars()
         self.set_mode("OFFBOARD", 5)
         self.set_arm(True, 5)
-
-
         
         rospy.loginfo("This is a slaver")
+
+        takeoff_height = uv.swarm_parametr().altutude_height
+        positions = uv.swarm_parametr().positions
+
+        rospy.loginfo(takeoff_height)
+
         rospy.loginfo("run mission")  
-        #positions = np.load('/home/valeriia/UAV_Swarm_gazebo/catkin_ws/src/px4_controller/rrt_pruning_smoothing/Code/rrt_sim_smooth_path_coords.npy',allow_pickle=True)
-        positions = ((0, 0, 0),(0,0,5),(-5,-5,5),(-6,-5,5),(-7,-5,5),(-8,-5,4),(-9,-5,1),(-9,-5,0))
-        #positions = ((0, 0),(0,0),(-5,-5),(-6,-5),(-7,-5),(-8,-5),(-9,-5),(-9,-5))
-        
-        #for i in xrange(len(positions)):
-        #    positions[i][0]= positions[i][0]+3
-        #positions = ((0, 0, 0),(0,0,5),(-5,-5,5),(-6,-5,5),(-7,-5,5),(-8,-5,4),(-9,-5,1),(-9,-5,0))
 
         for i in xrange(len(positions)):
             
-            self.reach_position(positions[i][0], positions[i][1], 5, 30) # X, Y, Z
+            self.reach_position(positions[i][0], positions[i][1], takeoff_height, 30) # X, Y, Z
             #self.reach_position(positions[i][0], positions[i][1], positions[i][2], 30)
             rospy.loginfo("%s" %(i))
             self.listener()
