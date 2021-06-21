@@ -1,9 +1,18 @@
-<?xml version="1.0"?>
-<launch>
-    <!--include file="$(find px4)/launch/multi_uav_mavros_sitl.launch"/-->
+<?xml version="1.0" encoding="UTF-8"?>
 
-    <node name="multiply_node_0" pkg="swarm_alg" type="uav_0.py" output="screen"/>
-    <node name="multiply_node_1" pkg="swarm_alg" type="uav_1.py" output="screen"/>
-    <node name="multiply_node_2" pkg="swarm_alg" type="uav_2.py" output="screen"/>
+<launch>
+
+    <arg name="input" default="1"/>
+    <arg name="minus" default="1"/>
+    <arg name="nr" value="$(eval arg('input') - arg('minus'))"/>
+    
+    <group ns="$(eval 'multiply_node_' + str(arg('nr')))">
+        <node name="$(eval 'multiply_node_' + str(arg('nr')))"  pkg="swarm_alg" type="$(eval 'uav_' + str(arg('nr')) + '.py')" output="screen"/>
+    </group>
+
+    <!-- recursively start new node -->
+   <include file="$(find swarm_alg)/launch/multiply_run.launch" if="$(eval arg('nr') - 1 >= 0)">
+       <arg name="input" value="$(eval arg('input') - 1)"/>
+   </include>
 
 </launch>
