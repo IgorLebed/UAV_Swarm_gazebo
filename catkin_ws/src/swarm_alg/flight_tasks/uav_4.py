@@ -45,7 +45,7 @@ import rospy
 import math
 import numpy as np
 from geometry_msgs.msg import PoseStamped, Quaternion
-from mavros_2 import MavrosTestCommon
+from mavros_4 import MavrosTestCommon
 from pymavlink import mavutil
 from six.moves import xrange
 from std_msgs.msg import Header
@@ -53,7 +53,7 @@ from threading import Thread
 from tf.transformations import quaternion_from_euler
 import uav_0 as uv
 
-class MavrosOffboardPosctlTest_2(MavrosTestCommon):
+class MavrosOffboardPosctlTest_4(MavrosTestCommon):
 
     """
     Tests flying a path in offboard control by sending position setpoints
@@ -65,12 +65,12 @@ class MavrosOffboardPosctlTest_2(MavrosTestCommon):
     """
 
     def setUp(self):
-        super(MavrosOffboardPosctlTest_2, self).setUp()
+        super(MavrosOffboardPosctlTest_4, self).setUp()
 
         self.pos = PoseStamped()
         self.radius = 1
 
-        self.pos_setpoint_pub = rospy.Publisher('/uav2/mavros/setpoint_position/local', PoseStamped, queue_size=1)
+        self.pos_setpoint_pub = rospy.Publisher('/uav4/mavros/setpoint_position/local', PoseStamped, queue_size=1)
 
         # send setpoints in seperate thread to better prevent failsafe
         self.pos_thread = Thread(target=self.send_pos, args=())
@@ -81,7 +81,7 @@ class MavrosOffboardPosctlTest_2(MavrosTestCommon):
         global positions
 
     def tearDown(self):
-        super(MavrosOffboardPosctlTest_2, self).tearDown()
+        super(MavrosOffboardPosctlTest_4, self).tearDown()
 
     #
     # Helper methods
@@ -192,6 +192,6 @@ class MavrosOffboardPosctlTest_2(MavrosTestCommon):
 
 if __name__ == '__main__':
     import rostest
-    rospy.init_node('multiply_node_2', anonymous=True)
+    rospy.init_node('multiply_node_4', anonymous=True)
 
-    rostest.rosrun(PKG, 'mavros_offboard_posctl_test', MavrosOffboardPosctlTest_2)
+    rostest.rosrun(PKG, 'mavros_offboard_posctl_test', MavrosOffboardPosctlTest_4)
