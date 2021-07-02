@@ -10,3 +10,12 @@
 [submodule "catkin_ws/src/px4_controller"]
 	path = catkin_ws/src/px4_controller
 	url = https://github.com/ValeriiaIZH/px4_controller
+[submodule "catkin_ws/src/px4_controller"]
+	path = catkin_ws/src/px4_controller
+	url = https://github.com/ValeriiaIZH/px4_controller
+[submodule "catkin_ws/src/ros_msg_parser"]
+	path = catkin_ws/src/ros_msg_parser
+	url = https://github.com/facontidavide/ros_msg_parser.git
+[submodule "catkin_ws/src/uavcom"]
+	path = catkin_ws/src/uavcom
+	url = https://github.com/EliasShalnev/uavcom.git
