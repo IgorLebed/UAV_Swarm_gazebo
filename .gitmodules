@@ -16,9 +16,3 @@
 [submodule "catkin_ws/src/uavcom"]
 	path = catkin_ws/src/uavcom
 	url = https://github.com/EliasShalnev/uavcom.git
-[submodule "catkin_ws/src/coverage_planner"]
-	path = catkin_ws/src/coverage_planner
-	url = https://github.com/IgorLebed/coverage_planner.git
-[submodule "coverage_planner"]
-	path = coverage_planner
-	url = https://github.com/IgorLebed/coverage_planner.git
