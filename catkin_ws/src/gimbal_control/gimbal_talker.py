@@ -42,8 +42,8 @@ from mavros_msgs.msg import ActuatorControl
 
 def gimbal_tallker():
     rospy.init_node('gimbal_tallker')
-    gimbal_pub = rospy.Publisher('/mavros/mount_control/command', MountControl, queue_size=1)
-    actuator_pub = rospy.Publisher('/mavros/actuator_control', ActuatorControl, queue_size=1)
+    gimbal_pub = rospy.Publisher('uav0/mavros/mount_control/command', MountControl, queue_size=1)
+    actuator_pub = rospy.Publisher('uav0/mavros/actuator_control', ActuatorControl, queue_size=1)
 
     gimbal_= MountControl()
     actuator_ = ActuatorControl()
@@ -56,15 +56,19 @@ def gimbal_tallker():
             x = input("Input pitch: ")
             y = input("Input Roll: ")
             z = input("Input Yaw: ")
+            actuator_.header.stamp = rospy.get_rostime()
+            actuator_.header.frame_id = "map"
 
-
+            actuator_.group_mix = 2
             actuator_.controls[1] = x / 3.14 # Pitch
             actuator_.controls[2] = y / 3.14 # Yaw
 
             gimbal_.header.stamp = rospy.get_rostime()
             gimbal_.header.frame_id = "map"
             gimbal_.mode = 2
+            
             gimbal_.pitch = x / 3.14 * 180 # Pitch
+            #gimbal_.pitch = -1.5708 / 3.14 * 180 # Pitch
             gimbal_.roll = y / 3.14        # Roll
             gimbal_.yaw = z / 3.14 * 180   # Yaw
 
