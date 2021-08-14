@@ -1,0 +1,6 @@
+<?xml version="1.0"?>
+<launch>
+    <!--<include file="$(find px4)/launch/mavros_posix_sitl.launch"/>-->
+
+    <node name="swarm" pkg="swarm_alg" type="takeoff_server" output="screen"/>
+</launch>
