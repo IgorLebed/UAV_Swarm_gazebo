@@ -41,45 +41,31 @@ class MavrosTestCommon(unittest.TestCase):
         service_timeout = 30
         rospy.loginfo("waiting for ROS services")
         try:
-            rospy.wait_for_service('/uav0/mavros/param/get', service_timeout)
-            rospy.wait_for_service('/uav0/mavros/cmd/arming', service_timeout)
-            rospy.wait_for_service('/uav0/mavros/mission/push', service_timeout)
-            rospy.wait_for_service('/uav0/mavros/mission/clear', service_timeout)
-            rospy.wait_for_service('/uav0/mavros/set_mode', service_timeout)
+            rospy.wait_for_service('/scout0/uav0/mavros/param/get', service_timeout)
+            rospy.wait_for_service('/scout0/uav0/mavros/cmd/arming', service_timeout)
+            rospy.wait_for_service('/scout0/uav0/mavros/mission/push', service_timeout)
+            rospy.wait_for_service('/scout0/uav0/mavros/mission/clear', service_timeout)
+            rospy.wait_for_service('/scout0/uav0/mavros/set_mode', service_timeout)
+            #rospy.wait_for_service('/scout0/uav0/mavros/cmd/set_manual_input', service_timeout)
             rospy.loginfo("ROS services are up")
         except rospy.ROSException:
             self.fail("failed to connect to services")
-        self.get_param_srv = rospy.ServiceProxy('/uav0/mavros/param/get', ParamGet)
-        self.set_arming_srv = rospy.ServiceProxy('/uav0/mavros/cmd/arming',
-                                                 CommandBool)
-        self.set_mode_srv = rospy.ServiceProxy('/uav0/mavros/set_mode', SetMode)
-        self.wp_clear_srv = rospy.ServiceProxy('/uav0/mavros/mission/clear',
-                                               WaypointClear)
-        self.wp_push_srv = rospy.ServiceProxy('/uav0/mavros/mission/push',
-                                              WaypointPush)
+        self.get_param_srv = rospy.ServiceProxy('/scout0/uav0/mavros/param/get', ParamGet)
+        self.set_arming_srv = rospy.ServiceProxy('/scout0/uav0/mavros/cmd/arming', CommandBool)
+        self.set_mode_srv = rospy.ServiceProxy('/scout0/uav0/mavros/set_mode', SetMode)
+        self.wp_clear_srv = rospy.ServiceProxy('/scout0/uav0/mavros/mission/clear', WaypointClear)
+        self.wp_push_srv = rospy.ServiceProxy('/scout0/uav0/mavros/mission/push', WaypointPush)
+        self.set_manual_input_srv = rospy.ServiceProxy('/scout0/uav0/mavros/cmd/set_manual_input', CommandBool)
 
         # ROS subscribers
-        self.alt_sub = rospy.Subscriber('/uav0/mavros/altitude', Altitude,
-                                        self.altitude_callback)
-        self.ext_state_sub = rospy.Subscriber('/uav0/mavros/extended_state',
-                                              ExtendedState,
-                                              self.extended_state_callback)
-        self.global_pos_sub = rospy.Subscriber('/uav0/mavros/global_position/global',
-                                               NavSatFix,
-                                               self.global_position_callback)
-        self.imu_data_sub = rospy.Subscriber('/uav0/mavros/imu/data',
-                                               Imu,
-                                               self.imu_data_callback)
-        self.home_pos_sub = rospy.Subscriber('/uav0/mavros/home_position/home',
-                                             HomePosition,
-                                             self.home_position_callback)
-        self.local_pos_sub = rospy.Subscriber('/uav0/mavros/local_position/pose',
-                                              PoseStamped,
-                                              self.local_position_callback)
-        self.mission_wp_sub = rospy.Subscriber(
-            '/uav0/mavros/mission/waypoints', WaypointList, self.mission_wp_callback)
-        self.state_sub = rospy.Subscriber('/uav0/mavros/state', State,
-                                          self.state_callback)
+        self.alt_sub = rospy.Subscriber('/scout0/uav0/mavros/altitude', Altitude, self.altitude_callback)
+        self.ext_state_sub = rospy.Subscriber('/scout0/uav0/mavros/extended_state', ExtendedState, self.extended_state_callback)
+        self.global_pos_sub = rospy.Subscriber('/scout0/uav0/mavros/global_position/global', NavSatFix, self.global_position_callback)
+        self.imu_data_sub = rospy.Subscriber('/scout0/uav0/mavros/imu/data', Imu, self.imu_data_callback)
+        self.home_pos_sub = rospy.Subscriber('/scout0/uav0/mavros/home_position/home', HomePosition, self.home_position_callback)
+        self.local_pos_sub = rospy.Subscriber('/scout0/uav0/mavros/local_position/pose', PoseStamped, self.local_position_callback)
+        self.mission_wp_sub = rospy.Subscriber('/scout0/uav0/mavros/mission/waypoints', WaypointList, self.mission_wp_callback)
+        self.state_sub = rospy.Subscriber('/scout0/uav0/mavros/state', State, self.state_callback)
 
     def tearDown(self):
         self.log_topic_vars()
@@ -147,6 +133,13 @@ class MavrosTestCommon(unittest.TestCase):
             self.sub_topics_ready['mission_wp'] = True
 
     def state_callback(self, data):
+
+
+        if self.state.manual_input != data.manual_input:
+            rospy.loginfo("armed state changed from {0} to {1}".format(
+                self.state.manual_input, data.manual_input))
+       
+
         if self.state.armed != data.armed:
             rospy.loginfo("armed state changed from {0} to {1}".format(
                 self.state.armed, data.armed))
@@ -174,6 +167,37 @@ class MavrosTestCommon(unittest.TestCase):
     #
     # Helper methods
     #
+
+    def set_manual_input(self, manual_input, timeout):
+        """manual_input: PX4 manual_input string, timeout(int): seconds"""
+        rospy.loginfo("setting FCU manual_input: {0}".format(manual_input))
+        old_manual_input = self.state.manual_input
+        loop_freq = 1  # Hz
+        rate = rospy.Rate(loop_freq)
+        manual_input_set = False
+        for i in xrange(timeout * loop_freq):
+            if self.state.manual_input == manual_input:
+                manual_input_set = True
+                rospy.loginfo("set manual_input success | seconds: {0} of {1}".format(
+                    i / loop_freq, timeout))
+                break
+            else:
+                try:
+                    res = self.set_manual_input_srv(manual_input) 
+                    if not res.success:
+                        rospy.logerr("failed to send manual_input command")
+                except rospy.ServiceException as e:
+                    rospy.logerr(e)
+
+            try:
+                rate.sleep()
+            except rospy.ROSException as e:
+                self.fail(e)
+
+        self.assertTrue(manual_input_set, (
+            "failed to set mode | new mode: {0}, old mode: {1} | timeout(seconds): {2}".
+            format(manual_input, old_manual_input, timeout)))
+
     def set_arm(self, arm, timeout):
         """arm: True to arm or False to disarm, timeout(int): seconds"""
         rospy.loginfo("setting FCU arm: {0}".format(arm))

@@ -70,7 +70,7 @@ class MavrosOffboardPosctlTest_3(MavrosTestCommon):
         self.pos = PoseStamped()
         self.radius = 1
 
-        self.pos_setpoint_pub = rospy.Publisher('/uav3/mavros/setpoint_position/local', PoseStamped, queue_size=1)
+        self.pos_setpoint_pub = rospy.Publisher('/bomber3/uav3/mavros/setpoint_position/local', PoseStamped, queue_size=1)
 
         # send setpoints in seperate thread to better prevent failsafe
         self.pos_thread = Thread(target=self.send_pos, args=())
@@ -177,17 +177,51 @@ class MavrosOffboardPosctlTest_3(MavrosTestCommon):
             #self.reach_position(positions[i][0], positions[i][1], positions[i][2], 30)
             rospy.loginfo("%s" %(i))
 
-        rospy.loginfo("Input q for exit: ")
-        exit_p = raw_input()
-        q_i = "q"
-        if (exit_p == str(q_i)):
-            rospy.loginfo("Exit from program")
-            self.set_mode("AUTO.LAND", 5)
-            self.wait_for_landed_state(mavutil.mavlink.MAV_LANDED_STATE_ON_GROUND, 45, 0)
-            self.set_arm(False, 5)
-        else:
-            rospy.loginfo("Return to launch")
-            self.set_mode("AUTO.RTL", 5)
+        work = True
+        while (work == True):
+            rospy.loginfo("Enter 1 hold and exit program")
+            rospy.loginfo("Enter 2 auto landing")
+            rospy.loginfo("Enter 3 return to launch")
+            rospy.loginfo("Enter 4 coverage planning")
+            try:
+                rospy.loginfo("Input: ")
+                exit_p_num = int(raw_input())
+                rospy.loginfo("This is number: %s", exit_p_num)
+
+            except ValueError:
+                rospy.loginfo("This is not num!")
+                work = True
+            else:
+                if (exit_p_num == 1):
+                    rospy.loginfo("Exit from program")
+                    self.set_mode("AUTO.LOITER", 5)
+                    #execfile('/media/igor/LaCie/UAV_Swarm_gazebo/catkin_ws/src/path_ta/flight_tasks/uav_0.py')
+                    work = False
+                elif (exit_p_num == 2):
+                    rospy.loginfo("Exit from program")
+                    self.set_mode("AUTO.LAND", 5)
+                    self.wait_for_landed_state(mavutil.mavlink.MAV_LANDED_STATE_ON_GROUND, 45, 0)
+                    self.set_arm(False, 5)
+                    work = False
+                elif (exit_p_num == 3):
+                    rospy.loginfo("Return to launch")
+                    self.set_mode("AUTO.RTL", 5)
+                    work = False
+                #elif (exit_p_num == 4):
+                #    rospy.loginfo("This is coverage input: ")
+                    #TODO 
+                    """
+                    Write start coverage node!
+                    for i in xrange(len(positions)):
+                        self.reach_position(positions[i][0], positions[i][1], takeoff_height, 30) # X, Y, Z
+                        #self.reach_position(positions[i][0], positions[i][1], positions[i][2], 30)
+                        rospy.loginfo("%s" %(i))
+                        self.talker()
+                    Then possition not a rrt goal node. The possition this is a coverage goal node    
+                    """
+                elif (exit_p_num != 1 or exit_p_num != 2 or exit_p_num != 3):
+                    rospy.loginfo("Try again!")
+                    work = True
 
 
 if __name__ == '__main__':

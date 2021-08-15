@@ -96,7 +96,7 @@ import time
 class swarm_parametr(object):
     def __init__(self):
         super(swarm_parametr, self).__init__()
-        self.altutude_height = 4 
+        self.altutude_height = 5 
         self.positions = ((10,10,10),(11,13,10),(12,15,10),(13,18,10),(16,21,10),(19,23,10),(23,25,10))
 
 class MavrosOffboardPosctlTest_0(MavrosTestCommon):
@@ -117,14 +117,14 @@ class MavrosOffboardPosctlTest_0(MavrosTestCommon):
         self.pos = PoseStamped()
         self.radius = 1
 
-        self.pos_setpoint_pub = rospy.Publisher('/uav0/mavros/setpoint_position/local', PoseStamped, queue_size=1)
+        self.pos_setpoint_pub = rospy.Publisher('/scout0/uav0/mavros/setpoint_position/local', PoseStamped, queue_size=1)
 
         # send setpoints in seperate thread to better prevent failsafe
         self.pos_thread = Thread(target=self.send_pos, args=())
         self.pos_thread.daemon = True
         self.pos_thread.start()
         global takeoff_height
-        takeoff_height = 2
+        takeoff_height = 10
         
     def tearDown(self):
         super(MavrosOffboardPosctlTest_0, self).tearDown()
@@ -223,8 +223,9 @@ class MavrosOffboardPosctlTest_0(MavrosTestCommon):
         self.log_topic_vars()
         self.set_mode("OFFBOARD", 5)
         self.set_arm(True, 5)
-        
-        rospy.loginfo("This is a dungeon master")
+        #self.set_manual_input(True, 5)
+
+        rospy.loginfo("This is a master")
 
         takeoff_height = swarm_parametr().altutude_height
         positions = swarm_parametr().positions
@@ -239,16 +240,17 @@ class MavrosOffboardPosctlTest_0(MavrosTestCommon):
         #positions = ((0, 0, 0),(0,0,5),(-5,-5,5),(-6,-5,5),(-7,-5,5),(-8,-5,4),(-9,-5,1),(-9,-5,0))
 
         for i in xrange(len(positions)):
-            self.reach_position(positions[i][0], positions[i][1], takeoff_height, 30) # X, Y, Z
+            self.reach_position(positions[i][0], positions[i][1], takeoff_height + 5, 30) # X, Y, Z
             #self.reach_position(positions[i][0], positions[i][1], positions[i][2], 30)
             rospy.loginfo("%s" %(i))
             self.talker()
 
         work = True
         while (work == True):
-            rospy.loginfo("Enter 1 to go to survey the territory")
-            rospy.loginfo("Enter 2 to go landing")
-            rospy.loginfo("Enter 3 to go landing")
+            rospy.loginfo("Enter 1 hold and exit program")
+            rospy.loginfo("Enter 2 auto landing")
+            rospy.loginfo("Enter 3 return to launch")
+            rospy.loginfo("Enter 4 coverage planning")
             try:
                 rospy.loginfo("Input: ")
                 exit_p_num = int(raw_input())
@@ -259,19 +261,10 @@ class MavrosOffboardPosctlTest_0(MavrosTestCommon):
                 work = True
             else:
                 if (exit_p_num == 1):
-                    rospy.loginfo("This is coverage input: ")
                     rospy.loginfo("Exit from program")
-                    self.set_mode("ALTCTL", 5)
-                    #TODO 
-                    """
-                    Write start coverage node!
-                    for i in xrange(len(positions)):
-                        self.reach_position(positions[i][0], positions[i][1], takeoff_height, 30) # X, Y, Z
-                        #self.reach_position(positions[i][0], positions[i][1], positions[i][2], 30)
-                        rospy.loginfo("%s" %(i))
-                        self.talker()
-                    Then possition not a rrt goal node. The possition this is a coverage goal node    
-                    """
+                    #self.set_mode("OFFBOARD", 5)
+                    self.set_mode("AUTO.LOITER", 5)
+                    #execfile('/media/igor/LaCie/UAV_Swarm_gazebo/catkin_ws/src/path_ta/flight_tasks/uav_0.py')
                     work = False
                 elif (exit_p_num == 2):
                     rospy.loginfo("Exit from program")
@@ -283,6 +276,18 @@ class MavrosOffboardPosctlTest_0(MavrosTestCommon):
                     rospy.loginfo("Return to launch")
                     self.set_mode("AUTO.RTL", 5)
                     work = False
+                #elif (exit_p_num == 4):
+                #    rospy.loginfo("This is coverage input: ")
+                    #TODO 
+                    """
+                    Write start coverage node!
+                    for i in xrange(len(positions)):
+                        self.reach_position(positions[i][0], positions[i][1], takeoff_height, 30) # X, Y, Z
+                        #self.reach_position(positions[i][0], positions[i][1], positions[i][2], 30)
+                        rospy.loginfo("%s" %(i))
+                        self.talker()
+                    Then possition not a rrt goal node. The possition this is a coverage goal node    
+                    """
                 elif (exit_p_num != 1 or exit_p_num != 2 or exit_p_num != 3):
                     rospy.loginfo("Try again!")
                     work = True

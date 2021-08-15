@@ -41,45 +41,29 @@ class MavrosTestCommon(unittest.TestCase):
         service_timeout = 30
         rospy.loginfo("waiting for ROS services")
         try:
-            rospy.wait_for_service('/uav1/mavros/param/get', service_timeout)
-            rospy.wait_for_service('/uav1/mavros/cmd/arming', service_timeout)
-            rospy.wait_for_service('/uav1/mavros/mission/push', service_timeout)
-            rospy.wait_for_service('/uav1/mavros/mission/clear', service_timeout)
-            rospy.wait_for_service('/uav1/mavros/set_mode', service_timeout)
+            rospy.wait_for_service('/bomber1/uav1/mavros/param/get', service_timeout)
+            rospy.wait_for_service('/bomber1/uav1/mavros/cmd/arming', service_timeout)
+            rospy.wait_for_service('/bomber1/uav1/mavros/mission/push', service_timeout)
+            rospy.wait_for_service('/bomber1/uav1/mavros/mission/clear', service_timeout)
+            rospy.wait_for_service('/bomber1/uav1/mavros/set_mode', service_timeout)
             rospy.loginfo("ROS services are up")
         except rospy.ROSException:
             self.fail("failed to connect to services")
-        self.get_param_srv = rospy.ServiceProxy('/uav1/mavros/param/get', ParamGet)
-        self.set_arming_srv = rospy.ServiceProxy('/uav1/mavros/cmd/arming',
-                                                 CommandBool)
-        self.set_mode_srv = rospy.ServiceProxy('/uav1/mavros/set_mode', SetMode)
-        self.wp_clear_srv = rospy.ServiceProxy('/uav1/mavros/mission/clear',
-                                               WaypointClear)
-        self.wp_push_srv = rospy.ServiceProxy('/uav1/mavros/mission/push',
-                                              WaypointPush)
+        self.get_param_srv = rospy.ServiceProxy('/bomber1/uav1/mavros/param/get', ParamGet)
+        self.set_arming_srv = rospy.ServiceProxy('/bomber1/uav1/mavros/cmd/arming', CommandBool)
+        self.set_mode_srv = rospy.ServiceProxy('/bomber1/uav1/mavros/set_mode', SetMode)
+        self.wp_clear_srv = rospy.ServiceProxy('/bomber1/uav1/mavros/mission/clear', WaypointClear)
+        self.wp_push_srv = rospy.ServiceProxy('/bomber1/uav1/mavros/mission/push',WaypointPush)
 
         # ROS subscribers
-        self.alt_sub = rospy.Subscriber('/uav1/mavros/altitude', Altitude,
-                                        self.altitude_callback)
-        self.ext_state_sub = rospy.Subscriber('/uav1/mavros/extended_state',
-                                              ExtendedState,
-                                              self.extended_state_callback)
-        self.global_pos_sub = rospy.Subscriber('/uav1/mavros/global_position/global',
-                                               NavSatFix,
-                                               self.global_position_callback)
-        self.imu_data_sub = rospy.Subscriber('/uav1/mavros/imu/data',
-                                               Imu,
-                                               self.imu_data_callback)
-        self.home_pos_sub = rospy.Subscriber('/uav1/mavros/home_position/home',
-                                             HomePosition,
-                                             self.home_position_callback)
-        self.local_pos_sub = rospy.Subscriber('/uav1/mavros/local_position/pose',
-                                              PoseStamped,
-                                              self.local_position_callback)
-        self.mission_wp_sub = rospy.Subscriber(
-            '/uav1/mavros/mission/waypoints', WaypointList, self.mission_wp_callback)
-        self.state_sub = rospy.Subscriber('/uav1/mavros/state', State,
-                                          self.state_callback)
+        self.alt_sub = rospy.Subscriber('/bomber1/uav1/mavros/altitude', Altitude, self.altitude_callback)
+        self.ext_state_sub = rospy.Subscriber('/bomber1/uav1/mavros/extended_state', ExtendedState, self.extended_state_callback)
+        self.global_pos_sub = rospy.Subscriber('/bomber1/uav1/mavros/global_position/global', NavSatFix, self.global_position_callback)
+        self.imu_data_sub = rospy.Subscriber('/bomber1/uav1/mavros/imu/data', Imu, self.imu_data_callback)
+        self.home_pos_sub = rospy.Subscriber('/bomber1/uav1/mavros/home_position/home', HomePosition, self.home_position_callback)
+        self.local_pos_sub = rospy.Subscriber('/bomber1/uav1/mavros/local_position/pose', PoseStamped, self.local_position_callback)
+        self.mission_wp_sub = rospy.Subscriber('/bomber1/uav1/mavros/mission/waypoints', WaypointList, self.mission_wp_callback)
+        self.state_sub = rospy.Subscriber('/bomber1/uav1/mavros/state', State, self.state_callback)
 
     def tearDown(self):
         self.log_topic_vars()
