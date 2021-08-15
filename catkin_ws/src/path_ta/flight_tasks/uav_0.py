@@ -241,9 +241,9 @@ class MavrosOffboardPosctlTest_0(MavrosTestCommon):
                     time.sleep(2)
                 else:
                     rospy.loginfo("This is number!")
-                    rospy.loginfo("Fuuuu: %s and %s", str(self.goal_pose_x), str(self.goal_pose_y))  
+                    rospy.loginfo("Goal pose: x=%s and y=%s", str(self.goal_pose_x), str(self.goal_pose_y))  
                     positions = ((int(self.goal_pose_x), int(self.goal_pose_y), 10), (int(self.goal_pose_x), int(self.goal_pose_y), 10))
-                    rospy.loginfo("Fuuuu: %s", positions)
+                    rospy.loginfo("Position: %s", positions)
                     time.sleep(1)
                     check = False
                     #positions = swarm_parametr().positions
@@ -252,22 +252,16 @@ class MavrosOffboardPosctlTest_0(MavrosTestCommon):
                 check = True
             
         """Test offboard position control"""
-        self.log_topic_vars()
+        #self.log_topic_vars()
         self.set_mode("OFFBOARD", 5)
-        self.set_arm(True, 5)
+        #self.set_arm(True, 5)
         
-        rospy.loginfo("This is a dungeon master")
+        rospy.loginfo("This is boomber")
 
         takeoff_height = swarm_parametr().altutude_height
         rospy.loginfo(takeoff_height)
 
         rospy.loginfo("run mission")  
-
-        #positions = np.load('/home/valeriia/UAV_Swarm_gazebo/catkin_ws/src/px4_controller/rrt_pruning_smoothing/Code/rrt_sim_smooth_path_coords.npy',allow_pickle=True)
-        #positions = ((0, 0),(0,0),(-5,-5),(-6,-5),(-7,-5),(-8,-5),(-9,-5),(-9,-5))
-        #for i in xrange(len(positions)):
-        #    positions[i][0]= positions[i][0]+3
-        #positions = ((0, 0, 0),(0,0,5),(-5,-5,5),(-6,-5,5),(-7,-5,5),(-8,-5,4),(-9,-5,1),(-9,-5,0))
 
         for i in xrange(len(positions)):
             
