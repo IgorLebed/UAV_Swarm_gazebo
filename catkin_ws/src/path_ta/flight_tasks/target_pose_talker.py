@@ -45,16 +45,34 @@ from geometry_msgs.msg import Point
 def target_point():
     
     rospy.init_node('target_point')
-    target_point_publisher = rospy.Publisher('/target_point/position', Point, queue_size=10)
-    target_point = Point()
+    
+    target_scout_publisher = rospy.Publisher('/scout0/uav0/target_point/position', Point, queue_size=10)
+    target_bomber1_publisher = rospy.Publisher('/bomber1/uav1/target_point/position', Point, queue_size=10)
+    target_bomber2_publisher = rospy.Publisher('/bomber2/uav2/target_point/position', Point, queue_size=10)
+    target_bomber3_publisher = rospy.Publisher('/bomber3/uav3/target_point/position', Point, queue_size=10)
+    target_scout_point = Point()
+    target_bomber1_point = Point()
+    target_bomber2_point = Point()
+    target_bomber3_point = Point()
     rate = rospy.Rate(1) # 10hz
 
     while not rospy.is_shutdown(): #check_input == True:
 
-        target_point.x = input("Input x: ")
-        target_point.y = input("Input y: ")
+        target_scout_point.x = input("Input scout x: ")
+        target_scout_point.y = input("Input scout y: ")
+        target_scout_publisher.publish(target_scout_point)
 
-        target_point_publisher.publish(target_point)
+        target_bomber1_point.x = input("Input bomber1 x: ")
+        target_bomber1_point.y = input("Input bomber1 y: ")
+        target_bomber1_publisher.publish(target_bomber1_point)
+
+        target_bomber2_point.x = input("Input bomber2 x: ")
+        target_bomber2_point.y = input("Input bomber2 y: ")
+        target_bomber2_publisher.publish(target_bomber2_point)
+
+        target_bomber3_point.x = input("Input bomber3 x: ")
+        target_bomber3_point.y = input("Input bomber3 y: ")
+        target_bomber3_publisher.publish(target_bomber3_point)
 
         rate.sleep()
 
