@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<launch>
+
+    <arg name="input" default="1"/>
+    <arg name="minus" default="1"/>
+    <arg name="nr" value="$(eval arg('input') - arg('minus'))"/>
+    
+    
+    <group ns="$(eval 'multiply_node_' + str(arg('nr')))" if="$(eval arg('nr') == 0)">
+        <node name="$(eval 'multiply_node_' + str(arg('nr')))"  pkg="path_ta" type="$(eval 'better_scout_' + str(arg('nr')) + '.py')" output="screen"/>
+    </group> 
+
+    <!--<group ns="$(eval 'multiply_node_' + str(arg('nr')) >= 1)">-->
+    <group ns="$(eval 'multiply_node_' + str(arg('nr')))"  if="$(eval arg('nr') >= 1)" >
+        <node name="$(eval 'multiply_node_' + str(arg('nr')))"  pkg="path_ta" type="$(eval 'better_bomber_' + str(arg('nr')) + '.py')" output="screen"/>
+    </group>
+
+    <!-- recursively start new node -->
+   <include file="$(find path_ta)/launch/multiply_run_better.launch" if="$(eval arg('nr') - 1 >= 0)">
+       <arg name="input" value="$(eval arg('input') - 1)"/>
+   </include>
+
+</launch>
