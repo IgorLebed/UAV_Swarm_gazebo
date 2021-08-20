@@ -264,20 +264,19 @@ class MavrosOffboardPosctlTest_1(MavrosTestCommon):
                                 target_position_x = str(self.goal_pose_x)
                                 target_position_y = str(self.goal_pose_y)
                                 rospy.loginfo("Taget Pos: %s and %s",target_position_x, target_position_y)
-                                if (self.scout0_check.pose.position.y == 1):
-                                    #TODO pub 0 scout0_check
-                                    check = False
+                                # if (self.scout0_check.pose.position.y == 1):
+                                #     #TODO pub 0 scout0_check
+                                #     check = False
                                 time.sleep(2)
                             else:
                                 while (self.scout0_check.pose.position.x == 1):
                                     self.set_mode("OFFBOARD", 5)
-                                    scout_pose_x =  self.goal_pose_x
-                                    scout_pose_y =  self.goal_pose_y
-                                    scout_pose_z =  13 #test
-                                    self.reach_position(int(scout_pose_x) + 2, int(scout_pose_y), int(scout_pose_z) - 2, 50) # X, Y, Z 
-                                    time.sleep(0.3)
-                                if (self.scout0_check.pose.position.x != 1):
-                                    check = False   
+                                    pose_x =  self.goal_pose_x
+                                    pose_y =  self.goal_pose_y
+                                    pose_z =  13 #test
+                                    self.reach_position(int(pose_x) + 2, int(pose_y), int(pose_z) - 2, 50) # X, Y, Z 
+                                    time.sleep(0.3)      
+                                check = False   
                                 #work = False
                         except rospy.ROSInterruptException:
                             self.set_mode("AUTO.LOITER", 5)

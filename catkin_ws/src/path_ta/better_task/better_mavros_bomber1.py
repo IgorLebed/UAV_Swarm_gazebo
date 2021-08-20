@@ -164,9 +164,6 @@ class MavrosTestCommon(unittest.TestCase):
         self.scout0_check = data
         if not self.sub_topics_ready['scout0_check']:
             self.sub_topics_ready['scout0_check'] = True
-            
-
-
 
     def set_arm(self, arm, timeout):
         """arm: True to arm or False to disarm, timeout(int): seconds"""

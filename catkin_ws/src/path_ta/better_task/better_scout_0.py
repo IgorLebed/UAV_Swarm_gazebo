@@ -298,7 +298,9 @@ class MavrosOffboardPosctlTest_0(MavrosTestCommon):
                                        rospy.loginfo("Pub 1")
                                        self.check_scout.pose.position.x = 1
                                        time.sleep(2)
+                                    self.check_scout.pose.position.x = 0
                                     check = False 
+                                    
                             elif (self.goal_pose_x == None and self.goal_pose_y == None):
                                 target_position_x = str(self.goal_pose_x)
                                 target_position_y = str(self.goal_pose_y)
