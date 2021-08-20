@@ -222,7 +222,7 @@ class MavrosOffboardPosctlTest_1(MavrosTestCommon):
         work = True
         while (work == True):
             rospy.loginfo("Enter 1 FOLLOWER")
-            rospy.loginfo("Enter 2 coverage")
+            rospy.loginfo("Enter 2 Target Point")
             rospy.loginfo("Enter 3 to go landing")
             rospy.loginfo("Enter 4 AUTO.RTL")
             try:

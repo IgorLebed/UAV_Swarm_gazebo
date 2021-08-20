@@ -343,11 +343,24 @@ class MavrosOffboardPosctlTest_0(MavrosTestCommon):
                     self.set_mode("AUTO.LAND", 5)
                     self.wait_for_landed_state(mavutil.mavlink.MAV_LANDED_STATE_ON_GROUND, 45, 0)
                     self.set_arm(False, 5)
+                    self.check_scout.pose.position.x = 0
                     work = False
                 elif (exit_p_num == 4):
                     rospy.loginfo("Return to launch")
-                    self.set_mode("AUTO.RTL", 5)
-                    work = False
+                    check = True
+                    while (check == True):
+                        try:
+                            if (exit_p_num == 4):
+                                self.set_mode("AUTO.RTL", 5)
+                                while (exit_p_num < 8):
+                                    rospy.loginfo("Pub 1")
+                                    self.check_scout.pose.position.x = 1 
+                                    exit_p_num += 1
+                                    time.sleep(1)
+                                check = False
+                        except rospy.ROSInterruptException:
+                                self.set_mode("AUTO.LAND", 5)
+                                check = False 
                 elif (exit_p_num != 1 or exit_p_num != 2 or exit_p_num != 3 or exit_p_num !=4):
                     rospy.loginfo("Try again!")
                     work = True

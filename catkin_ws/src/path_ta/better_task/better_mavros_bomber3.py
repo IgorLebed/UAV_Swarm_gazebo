@@ -25,6 +25,11 @@ class MavrosTestCommon(unittest.TestCase):
         self.imu_data = Imu()
         self.home_position = HomePosition()
         self.local_position = PoseStamped()
+        #test
+        self.local_scout0_position = PoseStamped()
+        self.scout0_check = PoseStamped()
+        self.scout0_state = State()
+        #-----
         self.mission_wp = WaypointList()
         self.state = State()
         self.mav_type = None
@@ -37,7 +42,10 @@ class MavrosTestCommon(unittest.TestCase):
          'mission_wp',
          'state',
          'imu',
-         'target_pose']}
+         'target_pose',
+         'local_scout0_pos',
+         'scout0_state',
+         'scout0_check']}
         service_timeout = 30
         rospy.loginfo('waiting for ROS services')
         try:
@@ -63,7 +71,13 @@ class MavrosTestCommon(unittest.TestCase):
         self.local_pos_sub = rospy.Subscriber('/bomber3/mavros/local_position/pose', PoseStamped, self.local_position_callback)
         self.mission_wp_sub = rospy.Subscriber('/bomber3/mavros/mission/waypoints', WaypointList, self.mission_wp_callback)
         self.state_sub = rospy.Subscriber('/bomber3/mavros/state', State, self.state_callback)
-        self.target_sub = rospy.Subscriber('/bomber3/target_point/position', P, self.goal_pos_callback)
+        self.target_sub = rospy.Subscriber('/scout0/target_point/position', P, self.goal_pos_callback)
+
+        #test swarm
+        self.state_scout0_sub = rospy.Subscriber('/scout0/mavros/state', State, self.state_scout0_callback)
+        self.local_scout0_pos_sub = rospy.Subscriber('/scout0/mavros/local_position/pose', PoseStamped, self.local_scout0_position_callback)
+        self.scout0_check_sub = rospy.Subscriber('/scout0/mavros/check_mission', PoseStamped, self.scout0_check_callback)
+        #---
         return
 
     def tearDown(self):
@@ -127,6 +141,30 @@ class MavrosTestCommon(unittest.TestCase):
         if not self.sub_topics_ready['state'] and data.connected:
             self.sub_topics_ready['state'] = True
 
+    #----scout0 callback------
+    def state_scout0_callback(self, data):
+        #if self.scout0_state.armed != data.armed:
+            #rospy.loginfo('armed scout0_state changed from {0} to {1}'.format(self.scout0_state.armed, data.armed))
+        #if self.scout0_state.connected != data.connected:
+            #rospy.loginfo('connected changed from {0} to {1}'.format(self.scout0_state.connected, data.connected))
+        #if self.scout0_state.mode != data.mode:
+            #rospy.loginfo('mode changed from {0} to {1}'.format(self.scout0_state.mode, data.mode))
+        #if self.scout0_state.system_status != data.system_status:
+            #rospy.loginfo('system_status changed from {0} to {1}'.format(mavutil.mavlink.enums['MAV_STATE'][self.scout0_state.system_status].name, mavutil.mavlink.enums['MAV_STATE'][data.system_status].name))
+        self.scout0_states = data
+        if not self.sub_topics_ready['scout0_state'] and data.connected:
+            self.sub_topics_ready['scout0_state'] = True
+    
+    def local_scout0_position_callback(self, data):
+        self.local_scout0_position = data
+        if not self.sub_topics_ready['local_scout0_pos']:
+            self.sub_topics_ready['local_scout0_pos'] = True
+
+    def scout0_check_callback(self, data):
+        self.scout0_check = data
+        if not self.sub_topics_ready['scout0_check']:
+            self.sub_topics_ready['scout0_check'] = True
+
     def set_arm(self, arm, timeout):
         """arm: True to arm or False to disarm, timeout(int): seconds"""
         rospy.loginfo('setting FCU arm: {0}'.format(arm))
@@ -153,6 +191,7 @@ class MavrosTestCommon(unittest.TestCase):
                 self.fail(e)
 
         self.assertTrue(arm_set, 'failed to set arm | new arm: {0}, old arm: {1} | timeout(seconds): {2}'.format(arm, old_arm, timeout))
+
 
     def set_mode(self, mode, timeout):
         """mode: PX4 mode string, timeout(int): seconds"""

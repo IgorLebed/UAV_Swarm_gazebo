@@ -84,7 +84,7 @@ import rospy
 import math
 import numpy as np
 from geometry_msgs.msg import PoseStamped, Quaternion
-from mavros_bomber2 import MavrosTestCommon
+from better_mavros_bomber2 import MavrosTestCommon
 from pymavlink import mavutil
 from six.moves import xrange
 from std_msgs.msg import Header
@@ -92,23 +92,11 @@ from threading import Thread
 from tf.transformations import quaternion_from_euler
 from std_msgs.msg import String
 import time
+import better_scout_0 as uv
 #import setpoint_listener as path_ta
 
 
-
-class swarm_parametr(object):
-    def __init__(self):
-        super(swarm_parametr, self).__init__()
-
-        #path_ta.pos_listener()
-        
-        #x = MavrosTestCommon().goal_pose_x
-        #y = MavrosTestCommon().goal_pose_y
-
-        self.altutude_height = 4 
-        #self.positions = ((int(x), int(y), 10),(int(x), int(y), 10))
-
-class MavrosOffboardPosctlTest_3(MavrosTestCommon):
+class MavrosOffboardPosctlTest_2(MavrosTestCommon):
 
     """
     Tests flying a path in offboard control by sending position setpoints
@@ -121,7 +109,7 @@ class MavrosOffboardPosctlTest_3(MavrosTestCommon):
     
 
     def setUp(self):
-        super(MavrosOffboardPosctlTest_3, self).setUp()
+        super(MavrosOffboardPosctlTest_2, self).setUp()
 
         self.pos = PoseStamped()
         self.radius = 1
@@ -136,7 +124,7 @@ class MavrosOffboardPosctlTest_3(MavrosTestCommon):
         takeoff_height = 2
         
     def tearDown(self):
-        super(MavrosOffboardPosctlTest_3, self).tearDown()
+        super(MavrosOffboardPosctlTest_2, self).tearDown()
 
     #
     # Helper methods
@@ -213,70 +201,30 @@ class MavrosOffboardPosctlTest_3(MavrosTestCommon):
                    self.local_position.pose.position.y,
                    self.local_position.pose.position.z, timeout)))
 
-    def talker(self):
-        pub = rospy.Publisher('chatter', String, queue_size=10)
-        #rospy.init_node('talker', anonymous=True )
-        rate = rospy.Rate(10) #10 Hz
-        a = True
-        if a == True:
-        #while not rospy.is_shutdown():
-            hello_str = "hello world %s" % rospy.get_time()
-            rospy.loginfo(hello_str)
-            pub.publish(hello_str)
-            rate.sleep()
-            a = False
-
     # Test method
     def test_posctl(self):
 
-        
-
-        check = True
-        while (check == True):#(self.goal_pose_x == None and self.goal_pose_y == None):
-            try:
-                if (self.goal_pose_x == None and self.goal_pose_y == None):
-                    target_position_x = str(self.goal_pose_x)
-                    target_position_y = str(self.goal_pose_y)
-                    rospy.loginfo("Taget Pos: %s and %s",target_position_x, target_position_y)
-                    time.sleep(2)
-                else:
-                    rospy.loginfo("This is number!")
-                    rospy.loginfo("Goal pose: x=%s and y=%s", str(self.goal_pose_x), str(self.goal_pose_y))  
-                    positions = ((int(self.goal_pose_x), int(self.goal_pose_y), 10), (int(self.goal_pose_x), int(self.goal_pose_y), 10))
-                    rospy.loginfo("Position: %s", positions)
-                    time.sleep(1)
-                    check = False
-                    #positions = swarm_parametr().positions
-            except rospy.ROSInterruptException:
-                rospy.loginfo("This is not num!")
-                check = True
-            
         """Test offboard position control"""
-        #self.log_topic_vars()
+        self.log_topic_vars()
         self.set_mode("OFFBOARD", 5)
-        #self.set_arm(True, 5)
+        self.set_arm(True, 5)
         
         rospy.loginfo("This is boomber")
+        takeoff_height = uv.swarm_parametr().altutude_height
+        positions = uv.swarm_parametr().positions
 
-        takeoff_height = swarm_parametr().altutude_height
-        rospy.loginfo(takeoff_height)
-
-        rospy.loginfo("run mission")  
-
-        for i in xrange(len(positions)):
+        rospy.loginfo("run mission")                  
             
-            #rospy.loginfo("Position talker x: %s", path_ta.goal_pose_x)
-            #rospy.loginfo("Position talker y: %s", path_ta.goal_pose_y)
+        for i in xrange(len(positions)):
             self.reach_position(positions[i][0], positions[i][1], takeoff_height, 30) # X, Y, Z
-            #self.reach_position(positions[i][0], positions[i][1], positions[i][2], 30)
             rospy.loginfo("%s" %(i))
-            self.talker()
 
         work = True
         while (work == True):
-            rospy.loginfo("Enter 1 to go to survey the territory")
-            rospy.loginfo("Enter 2 to go landing")
+            rospy.loginfo("Enter 1 FOLLOWER")
+            rospy.loginfo("Enter 2 Target Point")
             rospy.loginfo("Enter 3 to go landing")
+            rospy.loginfo("Enter 4 AUTO.RTL")
             try:
                 rospy.loginfo("Input: ")
                 exit_p_num = int(raw_input())
@@ -290,29 +238,60 @@ class MavrosOffboardPosctlTest_3(MavrosTestCommon):
                 work = True
             else:
                 if (exit_p_num == 1):
-                    rospy.loginfo("This is coverage input: ")
-                    #TODO 
-                    """
-                    Write start coverage node!
-                    for i in xrange(len(positions)):
-                        self.reach_position(positions[i][0], positions[i][1], takeoff_height, 30) # X, Y, Z
-                        #self.reach_position(positions[i][0], positions[i][1], positions[i][2], 30)
-                        rospy.loginfo("%s" %(i))
-                        self.talker()
-                    Then possition not a rrt goal node. The possition this is a coverage goal node    
-                    """
-                    work = False
+                    rospy.loginfo("Follower\nExit from program")
+                    self.set_mode("OFFBOARD", 5)
+                    #work = False
+                    check =True
+                    while (check == True):
+                        if (self.scout0_check.pose.position.x != 1):
+                            while (self.scout0_check.pose.position.x != 1):
+                                self.set_mode("OFFBOARD", 5)
+                                scout_pose_x =  self.local_scout0_position.pose.position.x
+                                scout_pose_y =  self.local_scout0_position.pose.position.y
+                                scout_pose_z =  self.local_scout0_position.pose.position.z # test
+                                self.reach_position(int(scout_pose_x) - 2, int(scout_pose_y), int(scout_pose_z) - 2, 50) # X, Y, Z
+                                rospy.loginfo("local pos x: %s and pos y: %s ", scout_pose_x, scout_pose_y)
+                                time.sleep(0.3)
+                            if self.scout0_check.pose.position.x == 1:
+                                check = False
                 elif (exit_p_num == 2):
+                    rospy.loginfo("This is target fly mode")
+                    self.set_mode("OFFBOARD", 5)
+                    check =True
+                    while (check == True):
+                        try:
+                            if (self.goal_pose_x == None and self.goal_pose_y == None):
+                                target_position_x = str(self.goal_pose_x)
+                                target_position_y = str(self.goal_pose_y)
+                                rospy.loginfo("Taget Pos: %s and %s",target_position_x, target_position_y)
+                                # if (self.scout0_check.pose.position.y == 1):
+                                #     #TODO pub 0 scout0_check
+                                #     check = False
+                                time.sleep(2)
+                            else:
+                                while (self.scout0_check.pose.position.x == 1):
+                                    self.set_mode("OFFBOARD", 5)
+                                    pose_x =  self.goal_pose_x
+                                    pose_y =  self.goal_pose_y
+                                    pose_z =  13 #test
+                                    self.reach_position(int(pose_x) - 2, int(pose_y), int(pose_z) - 2, 50) # X, Y, Z 
+                                    time.sleep(0.3)      
+                                check = False   
+                                #work = False
+                        except rospy.ROSInterruptException:
+                            self.set_mode("AUTO.LOITER", 5)
+                            check = False
+                elif (exit_p_num == 3):
                     rospy.loginfo("Exit from program")
                     self.set_mode("AUTO.LAND", 5)
                     self.wait_for_landed_state(mavutil.mavlink.MAV_LANDED_STATE_ON_GROUND, 45, 0)
                     self.set_arm(False, 5)
                     work = False
-                elif (exit_p_num == 3):
+                elif (exit_p_num == 4):
                     rospy.loginfo("Return to launch")
                     self.set_mode("AUTO.RTL", 5)
                     work = False
-                elif (exit_p_num != 1 or exit_p_num != 2 or exit_p_num != 3):
+                elif (exit_p_num != 1 or exit_p_num != 2 or exit_p_num != 3 or exit_p_num != 4):
                     rospy.loginfo("Try again!")
                     work = True
 
@@ -321,4 +300,4 @@ if __name__ == '__main__':
     import rostest
     rospy.init_node('multiply_node_2', anonymous=True)
     
-    rostest.rosrun(PKG, 'mavros_offboard_posctl_test', MavrosOffboardPosctlTest_3)
+    rostest.rosrun(PKG, 'mavros_offboard_posctl_test', MavrosOffboardPosctlTest_2)
