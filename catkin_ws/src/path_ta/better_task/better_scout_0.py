@@ -76,25 +76,27 @@
 # The shebang of this file is currently Python2 because some
 # dependencies such as pymavlink don't play well with Python3 yet.
 from __future__ import division
+from sys import path
+
+from rospy.exceptions import ROSException, ROSInternalException
 
 
 PKG = 'px4'
 
 import rospy
 import math
+import time
 import numpy as np
-from geometry_msgs.msg import PoseStamped, Quaternion
-from better_mavros_scout0 import MavrosTestCommon
 from pymavlink import mavutil
 from six.moves import xrange
-from std_msgs.msg import Header
 from threading import Thread
 from tf.transformations import quaternion_from_euler
-from std_msgs.msg import String
-import time
-#import setpoint_listener as path_ta
 
+from geometry_msgs.msg import PoseStamped, Quaternion
+from std_msgs.msg import Header, Float64, String
 
+from better_mavros_scout0 import MavrosTestCommon
+from energy_compute import RALX6, ORLAN
 
 class swarm_parametr(object):
     def __init__(self):
@@ -104,19 +106,24 @@ class swarm_parametr(object):
         
         #x = MavrosTestCommon().goal_pose_x
         #y = MavrosTestCommon().goal_pose_y
-        self.positions = (   
-            (10,10,10),
-            (11,13,10),
-            (12,15,10),
-            (13,18,10),
-            (16,21,10),
-            (19,23,10),
-            (23,25,10)
-            )
+        with open("/media/igor/LaCie/UAV_Swarm_gazebo/catkin_ws/src/path_ta/better_task/path_cpp.txt", "r") as ins:
+            path_cpp = []
+            for line in ins:
+                path_cpp.append([float(line) for line in line.split()])# here send a list path_cpp
+        self.positions = path_cpp 
+        # (   
+        #     (10,10,10),
+        #     (11,13,10),
+        #     (12,15,10),
+        #     (13,18,10),
+        #     (16,21,10),
+        #     (19,23,10),
+        #     (23,25,10)
+        #     )
         self.altutude_height = 20 
         #self.positions = ((int(x), int(y), 10),(int(x), int(y), 10))
 
-class MavrosOffboardPosctlTest_0(MavrosTestCommon):
+class MavrosOffboardPosctlTest_0(MavrosTestCommon, RALX6, ORLAN):
 
     """
     Tests flying a path in offboard control by sending position setpoints
@@ -126,18 +133,17 @@ class MavrosOffboardPosctlTest_0(MavrosTestCommon):
 
     FIXME: add flight path assertion (needs transformation from ROS frame to NED)
     """
-    
-
     def setUp(self):
         super(MavrosOffboardPosctlTest_0, self).setUp()
 
         self.pos = PoseStamped()
         self.check_scout= PoseStamped()
+        self.check_battery_scout = Float64()
         self.radius = 1
         
-
         self.pos_setpoint_pub = rospy.Publisher('/scout0/mavros/setpoint_position/local', PoseStamped, queue_size=1)
         self.check_pub = rospy.Publisher('/scout0/mavros/check_mission', PoseStamped, queue_size=1)
+        self.check_battery_pub = rospy.Publisher('/scout0/mavros/battery_status', Float64, queue_size=1)
 
         # send setpoints in seperate thread to better prevent failsafe
         self.pos_thread = Thread(target=self.send_pos, args=())
@@ -149,15 +155,20 @@ class MavrosOffboardPosctlTest_0(MavrosTestCommon):
         self.check_thread.daemon = True
         self.check_thread.start()
         
+        # send check scout in seperate thread to better prevent failsafe
+        self.check_battery_thread = Thread(target=self.send_check_battery_scout, args=())
+        self.check_battery_thread.daemon = True
+        self.check_battery_thread.start()
+
         global takeoff_height
-        takeoff_height = 2
         
     def tearDown(self):
         super(MavrosOffboardPosctlTest_0, self).tearDown()
+    
+    #
+    # ---------------------Publisher's methods-------------------------
+    #
 
-    #
-    # Helper methods
-    #
     def send_pos(self):
         rate = rospy.Rate(10)  # Hz
         self.pos.header = Header()
@@ -183,6 +194,36 @@ class MavrosOffboardPosctlTest_0(MavrosTestCommon):
                 rate.sleep()
             except rospy.ROSInterruptException:
                 pass
+            
+    def send_check_battery_scout(self):
+        rate = rospy.Rate(10)  # Hz
+        #self.check_battery_scout.header = Header()
+        #self.check_battery_scout.header.frame_id = "map"
+
+        while not rospy.is_shutdown():
+            #self.check_battery_scout.header.stamp = rospy.Time.now()
+            self.check_battery_pub.publish(self.check_battery_scout)
+            try:  # prevent garbage in console output when thread is killed
+                rate.sleep()
+            except rospy.ROSInterruptException:
+                pass        
+    
+    #
+    # -----------------------Helper methods------------------------
+    #
+
+    def battery_test(self):
+        rospy.loginfo("Test battery")
+        type_drone = "RALX6"
+
+        if (type_drone == "RALX6"):
+            #self.emergency_landing = self.landing_fuel_resource()
+            self.orlan_scout = ORLAN(self.mission_params, self.uav_params, self.uav_type)
+            rospy.loginfo("Test1")
+            self.emergency_landing = 64
+            self.check_battery_scout.data = self.emergency_landing
+        else:
+            rospy.loginfo("This ORLAN battary!")
 
     def is_at_position(self, x, y, z, offset):
         """offset: meters"""
@@ -231,7 +272,6 @@ class MavrosOffboardPosctlTest_0(MavrosTestCommon):
                     i / loop_freq, timeout))
                 reached = True
                 break
-
             try:
                 rate.sleep()
             except rospy.ROSException as e:
@@ -243,9 +283,13 @@ class MavrosOffboardPosctlTest_0(MavrosTestCommon):
                    self.local_position.pose.position.y,
                    self.local_position.pose.position.z, timeout)))
 
-    # Test method
+    #
+    # -----------------------Flight method----------------------------
+    # 
+
     def test_posctl(self):
-                   
+
+        #self.damage_calculate()
         """Test offboard position control"""
         self.log_topic_vars()
         self.set_mode("OFFBOARD", 5)
@@ -257,22 +301,22 @@ class MavrosOffboardPosctlTest_0(MavrosTestCommon):
         positions = swarm_parametr().positions
 
         rospy.loginfo("run mission")  
-
         for i in xrange(len(positions)):
             
-            #rospy.loginfo("Position talker x: %s", path_ta.goal_pose_x)
-            #rospy.loginfo("Position talker y: %s", path_ta.goal_pose_y)
             self.reach_position(positions[i][0], positions[i][1], takeoff_height, 30) # X, Y, Z
-            #self.reach_position(positions[i][0], positions[i][1], positions[i][2], 30)
+            #self.check_battery_scout.data = -1
+            self.damage_calculate()
             rospy.loginfo("%s" %(i))
             
         work = True
         while (work == True):
+            
             rospy.loginfo("Enter 1 hold")
             rospy.loginfo("Enter 2 coverage")
             rospy.loginfo("Enter 3 landing")
             rospy.loginfo("Enter 4 go to launch")
             try:
+                
                 rospy.loginfo("Input: ")
                 exit_p_num = int(raw_input())
                 rospy.loginfo("This is number: %s", exit_p_num)
@@ -317,10 +361,7 @@ class MavrosOffboardPosctlTest_0(MavrosTestCommon):
                                 self.reach_position(int(self.goal_pose_x), int(self.goal_pose_y), takeoff_height, 30)
                                 self.goal_pose_x = None 
                                 self.goal_pose_y = None   
-                                time.sleep(2)
-                                
-                                    
-                                    
+                                time.sleep(2)       
                         except rospy.ROSInterruptException:
                             self.set_mode("AUTO.LOITER", 5)
                             check = False

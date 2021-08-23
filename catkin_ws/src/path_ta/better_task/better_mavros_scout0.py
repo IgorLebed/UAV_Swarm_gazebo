@@ -6,17 +6,27 @@ import math
 from geometry_msgs.msg import PoseStamped
 from mavros_msgs.msg import Altitude, ExtendedState, HomePosition, State, WaypointList
 from mavros_msgs.srv import CommandBool, ParamGet, SetMode, WaypointClear, WaypointPush
+from gazebo_msgs.srv import SetModelState, GetModelState, GetModelProperties, SpawnModel, GetWorldProperties, GetLinkState, DeleteModel
+from gazebo_msgs.msg import ModelState
+
 from pymavlink import mavutil
+from rospy.exceptions import ROSInternalException
 from sensor_msgs.msg import NavSatFix, Imu
 from six.moves import xrange
-from geometry_msgs.msg import Point as P
+from geometry_msgs.msg import Point
+from std_msgs.msg import Float32
 
 class MavrosTestCommon(unittest.TestCase):
     goal_pose_x = None
     goal_pose_y = None
 
+    global total_damage
+
     def __init__(self, *args):
         super(MavrosTestCommon, self).__init__(*args)
+
+        self.UPPER_DAMAGE_LIMIT = 0.9
+        self.total_damage = 0.0001
 
     def setUp(self):
         self.altitude = Altitude()
@@ -28,8 +38,11 @@ class MavrosTestCommon(unittest.TestCase):
         self.mission_wp = WaypointList()
         self.state = State()
         self.mav_type = None
-        self.target_sub = P()
+        #-----
+        self.target_sub = Point()
         self.scout0_check = PoseStamped()
+        self.damage = Float32()
+        self.state_msg = ModelState()
         self.sub_topics_ready = {key:False for key in ['alt',
          'ext_state',
          'global_pos',
@@ -39,7 +52,8 @@ class MavrosTestCommon(unittest.TestCase):
          'state',
          'imu',
          'target_pose',
-         'scout0_check']}
+         'scout0_check',
+         'damage']}
         service_timeout = 30
         rospy.loginfo('waiting for ROS services')
         try:
@@ -52,6 +66,9 @@ class MavrosTestCommon(unittest.TestCase):
         except rospy.ROSException:
             self.fail('failed to connect to services')
 
+        #
+        #------------------------------------Standart_Tipic_List-----------------------------------------------------------------
+        #
         self.get_param_srv = rospy.ServiceProxy('/scout0/mavros/param/get', ParamGet)
         self.set_arming_srv = rospy.ServiceProxy('/scout0/mavros/cmd/arming', CommandBool)
         self.set_mode_srv = rospy.ServiceProxy('/scout0/mavros/set_mode', SetMode)
@@ -66,22 +83,38 @@ class MavrosTestCommon(unittest.TestCase):
         self.mission_wp_sub = rospy.Subscriber('/scout0/mavros/mission/waypoints', WaypointList, self.mission_wp_callback)
         self.state_sub = rospy.Subscriber('/scout0/mavros/state', State, self.state_callback)
         
-        #----
-        self.target_sub = rospy.Subscriber('/scout0/target_point/position', P, self.goal_pos_callback)
+        #
+        #------------------------------------My_Tipic_List-----------------------------------------------------------------
+        #s
+        self.target_sub = rospy.Subscriber('/scout0/target_point/position', Point, self.goal_pos_callback)
         self.scout0_check_sub = rospy.Subscriber('/scout0/mavros/check_mission/stop', PoseStamped, self.scout0_check_callback)
+        self.def_prob_sub = rospy.Subscriber('/scout0/damage', Float32, self.damage_callback)
+        
         return
 
     def tearDown(self):
         self.log_topic_vars()
 
+    #
+    # ----------------My_Callback-------------------
+    #
+    def goal_pos_callback(self, data):
+        self.goal_pose_x = data.x
+        self.goal_pose_y = data.y
+    
+    def damage_callback(self, data):
+        self.damage = data
+        if not self.sub_topics_ready['damage']:
+            self.sub_topics_ready['damage'] = True
+    
     def scout0_check_callback(self, data):
         self.scout0_check = data
         if not self.sub_topics_ready['scout0_check']:
             self.sub_topics_ready['scout0_check'] = True
 
-    def goal_pos_callback(self, data):
-        self.goal_pose_x = data.x
-        self.goal_pose_y = data.y
+    #
+    # --------------Standart_Callback------------
+    #
 
     def altitude_callback(self, data):
         self.altitude = data
@@ -326,6 +359,62 @@ class MavrosTestCommon(unittest.TestCase):
 
         self.assertTrue(res.success, 'MAV_TYPE param get failed | timeout(seconds): {0}'.format(timeout))
 
+    #---------Del_Sub_After_Critical_Damage-------
+    """
+    FIXME: Add all sub
+    """
+
+    def damage_calculate(self): 
+        try: 
+            self.total_damage += self.damage.data
+            #self.total_damage = 0.001
+            
+            if self.total_damage >= self.UPPER_DAMAGE_LIMIT:
+                rospy.loginfo("ral_x60" + ' was exploded!')
+                self.set_model_state()
+                self.set_arm(False, 5) 
+                self.unregister_subs()
+                del self
+            else:
+                rospy.loginfo("ral_x60" + ' current def prob value: ' + str(self.total_damage))
+        except ROSInternalException:
+            rospy.loginfo(("Error damage"))
+
+    def unregister_subs(self):
+        self.def_prob_sub.unregister()
+        self.scout0_check_sub.unregister()
+        self.state_sub.unregister()
+        self.target_sub.unregister()
+        self.mission_wp_sub.unregister()
+        self.home_pos_sub.unregister()
+        self.imu_data_sub.unregister()
+        self.global_pos_sub.unregister()
+        self.ext_state_sub.unregister()
+        self.alt_sub.unregister()
+
+    def set_model_state(self):
+        self.state_msg = self.prepare_model_state_msg()
+        rospy.wait_for_service('/gazebo/set_model_state')
+        try:
+            set_state = rospy.ServiceProxy('/gazebo/set_model_state', SetModelState)
+            resp = set_state(self.state_msg)
+        except:
+            print("Service call failed: ")
+
+    def prepare_model_state_msg(self):
+        
+        self.state_msg.model_name = "ral_x60"
+        quat = [0,0,0,1]
+        self.state_msg.pose.position.x = 0
+        self.state_msg.pose.position.y = 0
+        self.state_msg.pose.position.z = 0
+        self.state_msg.pose.orientation.x = quat[0]
+        self.state_msg.pose.orientation.y = quat[1]
+        self.state_msg.pose.orientation.z = quat[2]
+        self.state_msg.pose.orientation.w = quat[3]
+        
+        return self.state_msg
+
     def log_topic_vars(self):
         """log the state of topic variables"""
         rospy.loginfo('========================')
@@ -345,5 +434,9 @@ class MavrosTestCommon(unittest.TestCase):
         rospy.loginfo('========================')
         rospy.loginfo('state:\n{}'.format(self.state))
         rospy.loginfo('========================')
-        rospy.loginfo('target_position:\n{}'.format(self.target_sub))
+
+
+        #rospy.loginfo('target_position:\n{}'.format(self.target_sub))
+        #rospy.loginfo('========================')
+        rospy.loginfo('damage\n{}'.format(self.damage))
         rospy.loginfo('========================')
