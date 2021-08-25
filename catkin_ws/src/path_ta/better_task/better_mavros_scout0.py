@@ -367,14 +367,11 @@ class MavrosTestCommon(unittest.TestCase):
     def damage_calculate(self): 
         try: 
             self.total_damage += self.damage.data
-            #self.total_damage = 0.001
-            
             if self.total_damage >= self.UPPER_DAMAGE_LIMIT:
                 rospy.loginfo("ral_x60" + ' was exploded!')
-                self.set_model_state()
-                self.set_arm(False, 5) 
-                self.unregister_subs()
-                del self
+                #self.set_model_state()
+                #self.unregister_subs()
+                #del self
             else:
                 rospy.loginfo("ral_x60" + ' current def prob value: ' + str(self.total_damage))
         except ROSInternalException:
@@ -407,7 +404,7 @@ class MavrosTestCommon(unittest.TestCase):
         quat = [0,0,0,1]
         self.state_msg.pose.position.x = 0
         self.state_msg.pose.position.y = 0
-        self.state_msg.pose.position.z = 0
+        self.state_msg.pose.position.z = 1
         self.state_msg.pose.orientation.x = quat[0]
         self.state_msg.pose.orientation.y = quat[1]
         self.state_msg.pose.orientation.z = quat[2]

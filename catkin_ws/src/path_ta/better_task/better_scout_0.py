@@ -76,6 +76,7 @@
 # The shebang of this file is currently Python2 because some
 # dependencies such as pymavlink don't play well with Python3 yet.
 from __future__ import division
+from operator import pos
 from sys import path
 
 from rospy.exceptions import ROSException, ROSInternalException
@@ -96,7 +97,7 @@ from geometry_msgs.msg import PoseStamped, Quaternion
 from std_msgs.msg import Header, Float64, String
 
 from better_mavros_scout0 import MavrosTestCommon
-from energy_compute import RALX6, ORLAN
+
 
 class swarm_parametr(object):
     def __init__(self):
@@ -106,24 +107,23 @@ class swarm_parametr(object):
         
         #x = MavrosTestCommon().goal_pose_x
         #y = MavrosTestCommon().goal_pose_y
-        with open("/media/igor/LaCie/UAV_Swarm_gazebo/catkin_ws/src/path_ta/better_task/path_cpp.txt", "r") as ins:
+        with open("/media/igor/LaCie/UAV_Swarm_gazebo/catkin_ws/src/path_planning/scripts/global_path.txt", "r") as ins:
             path_cpp = []
             for line in ins:
                 path_cpp.append([float(line) for line in line.split()])# here send a list path_cpp
-        self.positions = path_cpp 
-        # (   
-        #     (10,10,10),
-        #     (11,13,10),
-        #     (12,15,10),
-        #     (13,18,10),
-        #     (16,21,10),
-        #     (19,23,10),
-        #     (23,25,10)
-        #     )
+        self.positions =(   #path_cpp
+             (10,10,10),
+             (11,13,10),
+             (12,15,10),
+             (13,18,10),
+             (16,21,10),
+             (19,23,10),
+             (23,25,10)
+             )
         self.altutude_height = 20 
         #self.positions = ((int(x), int(y), 10),(int(x), int(y), 10))
 
-class MavrosOffboardPosctlTest_0(MavrosTestCommon, RALX6, ORLAN):
+class MavrosOffboardPosctlTest_0(MavrosTestCommon):
 
     """
     Tests flying a path in offboard control by sending position setpoints
@@ -301,15 +301,34 @@ class MavrosOffboardPosctlTest_0(MavrosTestCommon, RALX6, ORLAN):
         positions = swarm_parametr().positions
 
         rospy.loginfo("run mission")  
-        for i in xrange(len(positions)):
+        self.damage_calculate()
+        work0 = True
+        while (work0 == True):
+            for i in xrange(len(positions)):
+                self.damage_calculate()
+                if (self.total_damage >= self.UPPER_DAMAGE_LIMIT):
+                    rospy.loginfo("Total damage: %s, Upper damage: %s", self.total_damage, self.UPPER_DAMAGE_LIMIT)
+                    self.set_mode("AUTO.LAND", 5)
+                    self.wait_for_landed_state(mavutil.mavlink.MAV_LANDED_STATE_ON_GROUND, 45, 0)
+                    self.set_model_state()
+                    #self.unregister_subs()
+                    #self.set_arm(False, 5) 
+                    work0 = False
+                    break
+                else:
+                    self.reach_position(positions[i][0], positions[i][1], takeoff_height, 99999) # X, Y, Z
+                    rospy.loginfo("i: %s, len: %s", i, len(positions))
+                    rospy.loginfo("%s" %(i))
+                    if (i+1 == len(positions)):
+                        rospy.loginfo("i: %s, len: %s", i, len(positions))
+                        work0 = False
+                        break
+                
+
+                
             
-            self.reach_position(positions[i][0], positions[i][1], takeoff_height, 30) # X, Y, Z
-            #self.check_battery_scout.data = -1
-            self.damage_calculate()
-            rospy.loginfo("%s" %(i))
-            
-        work = True
-        while (work == True):
+        work1 = True
+        while (work1 == True):
             
             rospy.loginfo("Enter 1 hold")
             rospy.loginfo("Enter 2 coverage")
@@ -326,13 +345,13 @@ class MavrosOffboardPosctlTest_0(MavrosTestCommon, RALX6, ORLAN):
 
             except ValueError:
                 rospy.loginfo("This is not num!")
-                work = True
+                work1 = True
             else:
 
                 if (exit_p_num == 1):
                     rospy.loginfo("Hold mode\nExit from program")
                     self.set_mode("OFFBOARD", 5)
-                    #work = False
+                    #work1 = False
                     check = True
                     while (check == True):#(self.goal_pose_x == None and self.goal_pose_y == None):
                         try:
@@ -378,14 +397,14 @@ class MavrosOffboardPosctlTest_0(MavrosTestCommon, RALX6, ORLAN):
                         self.talker()
                     Then possition not a rrt goal node. The possition this is a coverage goal node
                     """
-                    #work = False
+                    #work1 = False
                 elif (exit_p_num == 3):
                     rospy.loginfo("Exit from program")
                     self.set_mode("AUTO.LAND", 5)
                     self.wait_for_landed_state(mavutil.mavlink.MAV_LANDED_STATE_ON_GROUND, 45, 0)
                     self.set_arm(False, 5)
                     self.check_scout.pose.position.x = 0
-                    work = False
+                    work1 = False
                 elif (exit_p_num == 4):
                     rospy.loginfo("Return to launch")
                     check = True
@@ -404,7 +423,7 @@ class MavrosOffboardPosctlTest_0(MavrosTestCommon, RALX6, ORLAN):
                                 check = False 
                 elif (exit_p_num != 1 or exit_p_num != 2 or exit_p_num != 3 or exit_p_num !=4):
                     rospy.loginfo("Try again!")
-                    work = True
+                    work1 = True
 
 if __name__ == '__main__':
     import rostest
