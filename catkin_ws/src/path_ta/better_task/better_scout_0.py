@@ -93,8 +93,8 @@ from six.moves import xrange
 from threading import Thread
 from tf.transformations import quaternion_from_euler
 
-from geometry_msgs.msg import PoseStamped, Quaternion
-from std_msgs.msg import Header, Float64, String
+from geometry_msgs.msg import PoseStamped, Quaternion , Point
+from std_msgs.msg import Header, Float64, Bool
 
 from better_mavros_scout0 import MavrosTestCommon
 
@@ -140,10 +140,30 @@ class MavrosOffboardPosctlTest_0(MavrosTestCommon):
         self.check_scout= PoseStamped()
         self.check_battery_scout = Float64()
         self.radius = 1
+
+        #armed_scout0 = State()
+        self.cargo_scout0 = Bool()
+        self.fuel_resource_scout0 = Float64()
+        self.fuel_consume_scout0 = Float64()
+
+        self.takeoff_point = Point()
+        self.grouping_point = Point()
+        self.drop_point = Point()
+        self.landing_point = Point()
         
         self.pos_setpoint_pub = rospy.Publisher('/scout0/mavros/setpoint_position/local', PoseStamped, queue_size=1)
         self.check_pub = rospy.Publisher('/scout0/mavros/check_mission', PoseStamped, queue_size=1)
         self.check_battery_pub = rospy.Publisher('/scout0/mavros/battery_status', Float64, queue_size=1)
+
+        #-------------------------------Crisis Situation-------------------------------------
+        self.takeoff_point_publisher = rospy.Publisher("/scout0/takeoff_point", Point, queue_size=10)
+        self.grouping_point_publisher = rospy.Publisher("/scout0/grouping_point", Point, queue_size=10)
+        self.drop_point_publisher = rospy.Publisher("/scout0/drop_point", Point, queue_size=10)
+        self.landing_point_publisher = rospy.Publisher("/scout0/landing_point", Point, queue_size=10)
+        
+        self.cargo_scout0_publisher = rospy.Publisher("/scout0/cargo", Bool, queue_size=10)
+        self.fuel_resource_scout0_publisher = rospy.Publisher("/scout0/fuel_resource", Float64, queue_size=10)
+        self.fuel_consume_scout0_publisher = rospy.Publisher("/scout0/fuel_consume", Float64, queue_size=10)
 
         # send setpoints in seperate thread to better prevent failsafe
         self.pos_thread = Thread(target=self.send_pos, args=())
@@ -160,6 +180,21 @@ class MavrosOffboardPosctlTest_0(MavrosTestCommon):
         self.check_battery_thread.daemon = True
         self.check_battery_thread.start()
 
+        # send check scout in seperate thread to better prevent failsafe
+        self.cargo_thread = Thread(target=self.send_cargo, args=())
+        self.cargo_thread.daemon = True
+        self.cargo_thread.start()
+
+        # send fuel_consume in seperate thread to better prevent failsafe
+        self.fuel_consume_thread = Thread(target=self.send_fuel_consume, args=())
+        self.fuel_consume_thread.daemon = True
+        self.fuel_consume_thread.start()
+
+        # send fuel_resource in seperate thread to better prevent failsafe
+        self.fuel_resource_thread = Thread(target=self.send_fuel_resource, args=())
+        self.fuel_resource_thread.daemon = True
+        self.fuel_resource_thread.start()
+
         global takeoff_height
         
     def tearDown(self):
@@ -172,7 +207,7 @@ class MavrosOffboardPosctlTest_0(MavrosTestCommon):
     def send_pos(self):
         rate = rospy.Rate(10)  # Hz
         self.pos.header = Header()
-        self.pos.header.frame_id = "base_footprint"
+        self.pos.header.frame_id = "Active_pose"
 
         while not rospy.is_shutdown():
             self.pos.header.stamp = rospy.Time.now()
@@ -183,6 +218,7 @@ class MavrosOffboardPosctlTest_0(MavrosTestCommon):
                 pass
 
     def send_check_scout(self):
+        #TODO Rename!!!!!!!!!!!!!!!!!!!!!!!!
         rate = rospy.Rate(10)  # Hz
         self.check_scout.header = Header()
         self.check_scout.header.frame_id = "map"
@@ -207,23 +243,11 @@ class MavrosOffboardPosctlTest_0(MavrosTestCommon):
                 rate.sleep()
             except rospy.ROSInterruptException:
                 pass        
+     #
     
     #
     # -----------------------Helper methods------------------------
     #
-
-    def battery_test(self):
-        rospy.loginfo("Test battery")
-        type_drone = "RALX6"
-
-        if (type_drone == "RALX6"):
-            #self.emergency_landing = self.landing_fuel_resource()
-            self.orlan_scout = ORLAN(self.mission_params, self.uav_params, self.uav_type)
-            rospy.loginfo("Test1")
-            self.emergency_landing = 64
-            self.check_battery_scout.data = self.emergency_landing
-        else:
-            rospy.loginfo("This ORLAN battary!")
 
     def is_at_position(self, x, y, z, offset):
         """offset: meters"""
@@ -283,6 +307,72 @@ class MavrosOffboardPosctlTest_0(MavrosTestCommon):
                    self.local_position.pose.position.y,
                    self.local_position.pose.position.z, timeout)))
 
+    # Crisis situation-------------------------
+    #
+
+    def send_cargo(self):
+        rate = rospy.Rate(10)  # Hz
+        while not rospy.is_shutdown():
+            self.cargo_scout0_publisher.publish(self.cargo_scout0)
+            try:  # prevent garbage in console output when thread is killed
+                rate.sleep()
+            except rospy.ROSInterruptException:
+                pass
+    
+    def send_fuel_resource(self):
+        rate = rospy.Rate(10)  # Hz
+        while not rospy.is_shutdown():
+            self.fuel_resource_scout0_publisher.publish(self.fuel_resource_scout0)
+            try:  # prevent garbage in console output when thread is killed
+                rate.sleep()
+            except rospy.ROSInterruptException:
+                pass
+    
+    def send_fuel_consume(self):
+            rate = rospy.Rate(10)  # Hz
+            while not rospy.is_shutdown():
+                self.fuel_consume_scout0_publisher.publish(self.fuel_consume_scout0)
+                try:  # prevent garbage in console output when thread is killed
+                    rate.sleep()
+                except rospy.ROSInterruptException:
+                    pass
+    
+    def send_takeoff_point(self):
+            rate = rospy.Rate(10)  # Hz
+            while not rospy.is_shutdown():
+                self.takeoff_point_publisher.publish(self.takeoff_point)
+                try:  # prevent garbage in console output when thread is killed
+                    rate.sleep()
+                except rospy.ROSInterruptException:
+                    pass
+
+    def send_grouping_point(self):
+        rate = rospy.Rate(10)  # Hz
+        while not rospy.is_shutdown():
+            self.grouping_point_publisher.publish(self.grouping_point)
+            try:  # prevent garbage in console output when thread is killed
+                rate.sleep()
+            except rospy.ROSInterruptException:
+                pass    
+    
+    def send_drop_point(self):
+        rate = rospy.Rate(10)  # Hz
+        while not rospy.is_shutdown():
+            self.drop_point_publisher.publish(self.drop_point)
+            try:  # prevent garbage in console output when thread is killed
+                rate.sleep()
+            except rospy.ROSInterruptException:
+                pass    
+    
+    def send_landing_point(self):
+        rate = rospy.Rate(10)  # Hz
+        while not rospy.is_shutdown():
+            self.landing_point_publisher.publish(self.landing_point)
+            try:  # prevent garbage in console output when thread is killed
+                rate.sleep()
+            except rospy.ROSInterruptException:
+                pass    
+   
     #
     # -----------------------Flight method----------------------------
     # 
@@ -290,13 +380,24 @@ class MavrosOffboardPosctlTest_0(MavrosTestCommon):
     def test_posctl(self):
 
         #self.damage_calculate()
+        """Send messages for crisis situation"""
+        self.cargo_scout0.data = True
+        self.fuel_resource_scout0.data = 0.075
+        self.fuel_consume_scout0.data = 0.8
+
+        self.takeoff_point.x, self.takeoff_point.y = 0, 0
+        self.grouping_point.x, self.grouping_point.y = 10, 10
+        self.drop_point.x, self.drop_point.y = 100, 100
+        self.landing_point.x, self.landing_point.y = 200, 50
+        
         """Test offboard position control"""
         self.log_topic_vars()
         self.set_mode("OFFBOARD", 5)
         self.set_arm(True, 5)
         
         rospy.loginfo("This is bomber")
-
+        self.situation = self.crit_sit.data[0]
+        rospy.loginfo("This critical situation: %s", self.situation)
         takeoff_height = swarm_parametr().altutude_height
         positions = swarm_parametr().positions
 
@@ -306,48 +407,54 @@ class MavrosOffboardPosctlTest_0(MavrosTestCommon):
         while (work0 == True):
             for i in xrange(len(positions)):
                 self.damage_calculate()
+                rospy.loginfo("This critical situation: %s", self.situation)
+                if (self.situation == 0):
+                    rospy.loginfo("=============")
+                    rospy.loginfo("LOW BATTERY!!!")
+                    rospy.loginfo("=============")
+
+
                 if (self.total_damage >= self.UPPER_DAMAGE_LIMIT):
                     rospy.loginfo("Total damage: %s, Upper damage: %s", self.total_damage, self.UPPER_DAMAGE_LIMIT)
                     self.set_mode("AUTO.LAND", 5)
                     self.wait_for_landed_state(mavutil.mavlink.MAV_LANDED_STATE_ON_GROUND, 45, 0)
                     self.set_model_state()
-                    #self.unregister_subs()
+                    self.unregister_subs()
                     #self.set_arm(False, 5) 
                     work0 = False
                     break
+                elif(self.total_battery <= self.LOWER_BATTARY_LIMIT):
+                    rospy.loginfo("Total damage: %s, Upper damage: %s", self.total_battery, self.LOWER_BATTARY_LIMIT)
+                    rospy.WARN("Low Battary...")
+                    self.set_mode("AUTO.LAND", 5)
+                    self.wait_for_landed_state(mavutil.mavlink.MAV_LANDED_STATE_ON_GROUND, 45, 0)
                 else:
+                    rospy.loginfo("Total damage: %s, Upper damage: %s", self.total_damage, self.UPPER_DAMAGE_LIMIT)
                     self.reach_position(positions[i][0], positions[i][1], takeoff_height, 99999) # X, Y, Z
-                    rospy.loginfo("i: %s, len: %s", i, len(positions))
                     rospy.loginfo("%s" %(i))
                     if (i+1 == len(positions)):
-                        rospy.loginfo("i: %s, len: %s", i, len(positions))
                         work0 = False
                         break
-                
 
-                
-            
         work1 = True
         while (work1 == True):
-            
+            rospy.loginfo("This status critical situation: %s", self.situation)
+            rospy.loginfo("====================================")
             rospy.loginfo("Enter 1 hold")
             rospy.loginfo("Enter 2 coverage")
             rospy.loginfo("Enter 3 landing")
             rospy.loginfo("Enter 4 go to launch")
+            rospy.loginfo("====================================")
             try:
                 
                 rospy.loginfo("Input: ")
                 exit_p_num = int(raw_input())
                 rospy.loginfo("This is number: %s", exit_p_num)
-                
-                #rospy.loginfo("Position talker after input x: %s", path_ta.goal_pose_x)
-                #rospy.loginfo("Position talker after input y: %s", path_ta.goal_pose_y)
 
             except ValueError:
                 rospy.loginfo("This is not num!")
                 work1 = True
             else:
-
                 if (exit_p_num == 1):
                     rospy.loginfo("Hold mode\nExit from program")
                     self.set_mode("OFFBOARD", 5)

@@ -14,19 +14,22 @@ from rospy.exceptions import ROSInternalException
 from sensor_msgs.msg import NavSatFix, Imu
 from six.moves import xrange
 from geometry_msgs.msg import Point
-from std_msgs.msg import Float32
+from std_msgs.msg import Float32, Int64MultiArray
 
 class MavrosTestCommon(unittest.TestCase):
     goal_pose_x = None
     goal_pose_y = None
 
     global total_damage
+    
 
     def __init__(self, *args):
         super(MavrosTestCommon, self).__init__(*args)
 
         self.UPPER_DAMAGE_LIMIT = 0.9
         self.total_damage = 0.0001
+        self.LOWER_BATTARY_LIMIT = 5 
+        self.total_battery = 100
 
     def setUp(self):
         self.altitude = Altitude()
@@ -42,6 +45,9 @@ class MavrosTestCommon(unittest.TestCase):
         self.target_sub = Point()
         self.scout0_check = PoseStamped()
         self.damage = Float32()
+        self.battery = Float32()
+        self.crit_sit = Int64MultiArray()
+
         self.state_msg = ModelState()
         self.sub_topics_ready = {key:False for key in ['alt',
          'ext_state',
@@ -53,7 +59,9 @@ class MavrosTestCommon(unittest.TestCase):
          'imu',
          'target_pose',
          'scout0_check',
-         'damage']}
+         'damage',
+         'battery',
+         'crit_sit']}
         service_timeout = 30
         rospy.loginfo('waiting for ROS services')
         try:
@@ -89,7 +97,8 @@ class MavrosTestCommon(unittest.TestCase):
         self.target_sub = rospy.Subscriber('/scout0/target_point/position', Point, self.goal_pos_callback)
         self.scout0_check_sub = rospy.Subscriber('/scout0/mavros/check_mission/stop', PoseStamped, self.scout0_check_callback)
         self.def_prob_sub = rospy.Subscriber('/scout0/damage', Float32, self.damage_callback)
-        
+        self.battery_sub = rospy.Subscriber('/scout0/battery', Float32, self.battery_callback)
+        self.crit_sit_info_sub = rospy.Subscriber('/critical_status_info', Int64MultiArray, self.crit_sit_info_callback)
         return
 
     def tearDown(self):
@@ -107,10 +116,20 @@ class MavrosTestCommon(unittest.TestCase):
         if not self.sub_topics_ready['damage']:
             self.sub_topics_ready['damage'] = True
     
+    def battery_callback(self, data):
+        self.battery = data
+        if not self.sub_topics_ready['battery']:
+            self.sub_topics_ready['battery'] = True
+
     def scout0_check_callback(self, data):
         self.scout0_check = data
         if not self.sub_topics_ready['scout0_check']:
             self.sub_topics_ready['scout0_check'] = True
+
+    def crit_sit_info_callback(self, data):
+        self.crit_sit = data
+        if not self.sub_topics_ready['crit_sit']:
+            self.sub_topics_ready['crit_sit'] = True
 
     #
     # --------------Standart_Callback------------
@@ -436,4 +455,6 @@ class MavrosTestCommon(unittest.TestCase):
         #rospy.loginfo('target_position:\n{}'.format(self.target_sub))
         #rospy.loginfo('========================')
         rospy.loginfo('damage\n{}'.format(self.damage))
+        rospy.loginfo('========================')
+        rospy.loginfo('crit_sit\n{}'.format(self.crit_sit))
         rospy.loginfo('========================')
