@@ -43,7 +43,7 @@ class MavrosTestCommon(unittest.TestCase):
         self.mav_type = None
         #-----
         self.target_sub = Point()
-        self.scout0_check = PoseStamped()
+        self.scout0_exit_mode = PoseStamped()
         self.damage = Float32()
         self.battery = Float32()
         self.crit_sit = Int64MultiArray()
@@ -58,7 +58,7 @@ class MavrosTestCommon(unittest.TestCase):
          'state',
          'imu',
          'target_pose',
-         'scout0_check',
+         'scout0_exit_mode',
          'damage',
          'battery',
          'crit_sit']}
@@ -95,7 +95,7 @@ class MavrosTestCommon(unittest.TestCase):
         #------------------------------------My_Tipic_List-----------------------------------------------------------------
         #s
         self.target_sub = rospy.Subscriber('/scout0/target_point/position', Point, self.goal_pos_callback)
-        self.scout0_check_sub = rospy.Subscriber('/scout0/mavros/check_mission/stop', PoseStamped, self.scout0_check_callback)
+        self.scout0_exit_mode_sub = rospy.Subscriber('/scout0/mavros/check_mission/stop', PoseStamped, self.scout0_exit_mode_callback)
         self.def_prob_sub = rospy.Subscriber('/scout0/damage', Float32, self.damage_callback)
         self.battery_sub = rospy.Subscriber('/scout0/battery', Float32, self.battery_callback)
         self.crit_sit_info_sub = rospy.Subscriber('/critical_status_info', Int64MultiArray, self.crit_sit_info_callback)
@@ -121,10 +121,10 @@ class MavrosTestCommon(unittest.TestCase):
         if not self.sub_topics_ready['battery']:
             self.sub_topics_ready['battery'] = True
 
-    def scout0_check_callback(self, data):
-        self.scout0_check = data
-        if not self.sub_topics_ready['scout0_check']:
-            self.sub_topics_ready['scout0_check'] = True
+    def scout0_exit_mode_callback(self, data):
+        self.scout0_exit_mode = data
+        if not self.sub_topics_ready['scout0_exit_mode']:
+            self.sub_topics_ready['scout0_exit_mode'] = True
 
     def crit_sit_info_callback(self, data):
         self.crit_sit = data
@@ -377,12 +377,10 @@ class MavrosTestCommon(unittest.TestCase):
                 self.fail(e)
 
         self.assertTrue(res.success, 'MAV_TYPE param get failed | timeout(seconds): {0}'.format(timeout))
-
     #---------Del_Sub_After_Critical_Damage-------
     """
     FIXME: Add all sub
     """
-
     def damage_calculate(self): 
         try: 
             self.total_damage += self.damage.data
@@ -398,7 +396,7 @@ class MavrosTestCommon(unittest.TestCase):
 
     def unregister_subs(self):
         self.def_prob_sub.unregister()
-        self.scout0_check_sub.unregister()
+        self.scout0_exit_mode_sub.unregister()
         self.state_sub.unregister()
         self.target_sub.unregister()
         self.mission_wp_sub.unregister()

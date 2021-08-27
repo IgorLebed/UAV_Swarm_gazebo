@@ -75,9 +75,11 @@
 #
 # The shebang of this file is currently Python2 because some
 # dependencies such as pymavlink don't play well with Python3 yet.
-from __future__ import division
+from __future__ import barry_as_FLUFL, division
 from operator import pos
+from pickle import NONE
 from sys import path
+from energy_compute import check_armed_uavs
 
 from rospy.exceptions import ROSException, ROSInternalException
 
@@ -111,15 +113,15 @@ class swarm_parametr(object):
             path_cpp = []
             for line in ins:
                 path_cpp.append([float(line) for line in line.split()])# here send a list path_cpp
-        self.positions =(   #path_cpp
-             (10,10,10),
-             (11,13,10),
-             (12,15,10),
-             (13,18,10),
-             (16,21,10),
-             (19,23,10),
-             (23,25,10)
-             )
+        self.positions =path_cpp
+            #  ((10,10,10),
+            #  (11,13,10),
+            #  (12,15,10),
+            #  (13,18,10),
+            #  (16,21,10),
+            #  (19,23,10),
+            #  (23,25,10)
+            #  )
         self.altutude_height = 20 
         #self.positions = ((int(x), int(y), 10),(int(x), int(y), 10))
 
@@ -137,7 +139,7 @@ class MavrosOffboardPosctlTest_0(MavrosTestCommon):
         super(MavrosOffboardPosctlTest_0, self).setUp()
 
         self.pos = PoseStamped()
-        self.check_scout= PoseStamped()
+        self.change_bomber_mode= PoseStamped()
         self.check_battery_scout = Float64()
         self.radius = 1
 
@@ -170,10 +172,10 @@ class MavrosOffboardPosctlTest_0(MavrosTestCommon):
         self.pos_thread.daemon = True
         self.pos_thread.start()
 
-        # send check scout in seperate thread to better prevent failsafe
-        self.check_thread = Thread(target=self.send_check_scout, args=())
-        self.check_thread.daemon = True
-        self.check_thread.start()
+        # send change_bomber_mode in seperate thread to better prevent failsafe
+        self.change_bomber_mode_thread = Thread(target=self.change_bomber_mode_send, args=())
+        self.change_bomber_mode_thread.daemon = True
+        self.change_bomber_mode_thread.start()
         
         # send check scout in seperate thread to better prevent failsafe
         self.check_battery_thread = Thread(target=self.send_check_battery_scout, args=())
@@ -217,15 +219,15 @@ class MavrosOffboardPosctlTest_0(MavrosTestCommon):
             except rospy.ROSInterruptException:
                 pass
 
-    def send_check_scout(self):
+    def change_bomber_mode_send(self):
         #TODO Rename!!!!!!!!!!!!!!!!!!!!!!!!
         rate = rospy.Rate(10)  # Hz
-        self.check_scout.header = Header()
-        self.check_scout.header.frame_id = "map"
+        self.change_bomber_mode.header = Header()
+        self.change_bomber_mode.header.frame_id = "map"
 
         while not rospy.is_shutdown():
-            self.check_scout.header.stamp = rospy.Time.now()
-            self.check_pub.publish(self.check_scout)
+            self.change_bomber_mode.header.stamp = rospy.Time.now()
+            self.check_pub.publish(self.change_bomber_mode)
             try:  # prevent garbage in console output when thread is killed
                 rate.sleep()
             except rospy.ROSInterruptException:
@@ -373,6 +375,7 @@ class MavrosOffboardPosctlTest_0(MavrosTestCommon):
             except rospy.ROSInterruptException:
                 pass    
    
+    
     #
     # -----------------------Flight method----------------------------
     # 
@@ -396,24 +399,44 @@ class MavrosOffboardPosctlTest_0(MavrosTestCommon):
         self.set_arm(True, 5)
         
         rospy.loginfo("This is bomber")
-        self.situation = self.crit_sit.data[0]
-        rospy.loginfo("This critical situation: %s", self.situation)
         takeoff_height = swarm_parametr().altutude_height
         positions = swarm_parametr().positions
-
+        check_status = True
+        while check_status:
+            try: 
+                self.situation = self.crit_sit.data[0]
+                rospy.loginfo("YES VALUE!")
+            except:
+                self.situation = NONE
+                rospy.loginfo("NO VALUE!")
+                self.set_arm(True, 5)
+                time.sleep(2)
+            else: 
+                check_status = False
+        rospy.loginfo("This critical situation: %s", self.situation)
         rospy.loginfo("run mission")  
         self.damage_calculate()
+
         work0 = True
         while (work0 == True):
             for i in xrange(len(positions)):
                 self.damage_calculate()
-                rospy.loginfo("This critical situation: %s", self.situation)
-                if (self.situation == 0):
+                rospy.loginfo("This critical situation: %s", self.crit_sit.data[0])
+                if (self.crit_sit.data[0] == NONE):
+                    rospy.loginfo("ERROR NONE VALUE")
+                elif (self.crit_sit.data[0] == 0):
                     rospy.loginfo("=============")
                     rospy.loginfo("LOW BATTERY!!!")
                     rospy.loginfo("=============")
-
-
+                    i = 0
+                    while (i < 3):
+                        self.change_bomber_mode.pose.position.y = 1
+                        rospy.loginfo("Pub 'y' = 1")
+                        i += 1
+                        time.sleep(1)
+                    self.set_mode("AUTO.RTL", 5)
+                    work0 = False
+                    break
                 if (self.total_damage >= self.UPPER_DAMAGE_LIMIT):
                     rospy.loginfo("Total damage: %s, Upper damage: %s", self.total_damage, self.UPPER_DAMAGE_LIMIT)
                     self.set_mode("AUTO.LAND", 5)
@@ -435,10 +458,10 @@ class MavrosOffboardPosctlTest_0(MavrosTestCommon):
                     if (i+1 == len(positions)):
                         work0 = False
                         break
-
         work1 = True
         while (work1 == True):
-            rospy.loginfo("This status critical situation: %s", self.situation)
+            
+            rospy.loginfo("This status critical situation: %s", self.crit_sit.data[0])
             rospy.loginfo("====================================")
             rospy.loginfo("Enter 1 hold")
             rospy.loginfo("Enter 2 coverage")
@@ -446,14 +469,37 @@ class MavrosOffboardPosctlTest_0(MavrosTestCommon):
             rospy.loginfo("Enter 4 go to launch")
             rospy.loginfo("====================================")
             try:
-                
                 rospy.loginfo("Input: ")
                 exit_p_num = int(raw_input())
                 rospy.loginfo("This is number: %s", exit_p_num)
 
+                rospy.loginfo("This critical situation: %s", self.crit_sit.data[0])
+                if (self.crit_sit.data[0] == NONE):
+                    rospy.loginfo("ERROR NONE VALUE")
+                elif (self.crit_sit.data[0] == 0):
+                    rospy.loginfo("=============")
+                    rospy.loginfo("LOW BATTERY!!!")
+                    rospy.loginfo("=============")
+                    for i in range(1, 3):
+                        self.change_bomber_mode.pose.position.y = 1
+                        time.sleep(1)
+                    self.set_mode("AUTO.RTL", 5)
+                    work0 = False                
             except ValueError:
                 rospy.loginfo("This is not num!")
                 work1 = True
+                rospy.loginfo("This critical situation: %s", self.crit_sit.data[0])
+                if (self.crit_sit.data[0] == NONE):
+                    rospy.loginfo("ERROR NONE VALUE")
+                elif (self.crit_sit.data[0] == 0):
+                    rospy.loginfo("=============")
+                    rospy.loginfo("LOW BATTERY!!!")
+                    rospy.loginfo("=============")
+                    for i in range(1, 3):
+                        self.change_bomber_mode.pose.position.y = 1
+                        time.sleep(1)
+                    self.set_mode("AUTO.RTL", 5)
+                    work0 = False
             else:
                 if (exit_p_num == 1):
                     rospy.loginfo("Hold mode\nExit from program")
@@ -462,21 +508,21 @@ class MavrosOffboardPosctlTest_0(MavrosTestCommon):
                     check = True
                     while (check == True):#(self.goal_pose_x == None and self.goal_pose_y == None):
                         try:
-                            if (self.scout0_check.pose.position.y == 1):
+                            if (self.scout0_exit_mode.pose.position.y == 1):
                                     self.set_mode("AUTO.LOITER", 5) 
-                                    while (self.scout0_check.pose.position.y == 1):
+                                    while (self.scout0_exit_mode.pose.position.y == 1):
                                        rospy.loginfo("Pub 1")
-                                       self.check_scout.pose.position.x = 1
+                                       self.change_bomber_mode.pose.position.x = 1
                                        time.sleep(2)
-                                    self.check_scout.pose.position.x = 0
+                                    self.change_bomber_mode.pose.position.x = 0
                                     check = False 
                                     
                             elif (self.goal_pose_x == None and self.goal_pose_y == None):
                                 target_position_x = str(self.goal_pose_x)
                                 target_position_y = str(self.goal_pose_y)
                                 rospy.loginfo("Taget Pos: %s and %s",target_position_x, target_position_y)
-                                if (self.scout0_check.pose.position.y == 1):
-                                    #TODO pub 0 scout0_check
+                                if (self.scout0_exit_mode.pose.position.y == 1):
+                                    #TODO pub 0 scout0_exit_mode
                                     check = False
                                 time.sleep(2)
                             else:
@@ -485,14 +531,13 @@ class MavrosOffboardPosctlTest_0(MavrosTestCommon):
                                 rospy.loginfo("Goal pose: x=%s and y=%s", str(self.goal_pose_x), str(self.goal_pose_y))  
                                 takeoff_height = 15
                                 self.reach_position(int(self.goal_pose_x), int(self.goal_pose_y), takeoff_height, 30)
-                                self.goal_pose_x = None 
-                                self.goal_pose_y = None   
-                                time.sleep(2)       
+                                self.goal_pose_x = None
+                                self.goal_pose_y = None
+                                time.sleep(2)
                         except rospy.ROSInterruptException:
                             self.set_mode("AUTO.LOITER", 5)
                             check = False
                 elif (exit_p_num == 2):
-                    
                     rospy.loginfo("This is coverage input: ")
                     #TODO 
                     """
@@ -510,7 +555,7 @@ class MavrosOffboardPosctlTest_0(MavrosTestCommon):
                     self.set_mode("AUTO.LAND", 5)
                     self.wait_for_landed_state(mavutil.mavlink.MAV_LANDED_STATE_ON_GROUND, 45, 0)
                     self.set_arm(False, 5)
-                    self.check_scout.pose.position.x = 0
+                    self.change_bomber_mode.pose.position.x = 0
                     work1 = False
                 elif (exit_p_num == 4):
                     rospy.loginfo("Return to launch")
@@ -521,7 +566,7 @@ class MavrosOffboardPosctlTest_0(MavrosTestCommon):
                                 self.set_mode("AUTO.RTL", 5)
                                 while (exit_p_num < 8):
                                     rospy.loginfo("Pub 1")
-                                    self.check_scout.pose.position.x = 1 
+                                    self.change_bomber_mode.pose.position.x = 1 
                                     exit_p_num += 1
                                     time.sleep(1)
                                 check = False
