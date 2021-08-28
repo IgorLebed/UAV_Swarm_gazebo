@@ -31,6 +31,7 @@ class MavrosTestCommon(unittest.TestCase):
         self.LOWER_BATTARY_LIMIT = 5 
         self.total_battery = 100
 
+        self.TIMEOUT = 5
     def setUp(self):
         self.altitude = Altitude()
         self.extended_state = ExtendedState()
@@ -417,7 +418,7 @@ class MavrosTestCommon(unittest.TestCase):
 
     def prepare_model_state_msg(self):
         
-        self.state_msg.model_name = "ral_x60"
+        self.state_msg.model_name = "orlan_cam0"
         quat = [0,0,0,1]
         self.state_msg.pose.position.x = 0
         self.state_msg.pose.position.y = 0
