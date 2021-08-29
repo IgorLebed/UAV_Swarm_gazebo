@@ -131,11 +131,9 @@ class MavrosTestCommon(unittest.TestCase):
         self.crit_sit = data
         if not self.sub_topics_ready['crit_sit']:
             self.sub_topics_ready['crit_sit'] = True
-
     #
     # --------------Standart_Callback------------
     #
-
     def altitude_callback(self, data):
         self.altitude = data
         if not self.sub_topics_ready['alt'] and not math.isnan(data.amsl):
@@ -418,7 +416,7 @@ class MavrosTestCommon(unittest.TestCase):
 
     def prepare_model_state_msg(self):
         
-        self.state_msg.model_name = "orlan_cam0"
+        self.state_msg.model_name = "ral_x60"
         quat = [0,0,0,1]
         self.state_msg.pose.position.x = 0
         self.state_msg.pose.position.y = 0

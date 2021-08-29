@@ -149,7 +149,7 @@ class UAV(Thread):
 		distance = self.calc_path_distance()/1000 # kilometers
 		movement_in_hours = (distance/self.max_velocity) + self.calc_takeoff_landing_time() if self.uav_type=="ralx6" else (distance/self.max_velocity)
 
-		fuel_left_hours = self.fuel_resource - movement_in_hours*self.fuel_consume
+		fuel_left_hours = self.fuel_resource - movement_in_hours*self.max_fuel_resource
 		fuel_left_percent = (fuel_left_hours/self.max_fuel_resource)*100
 		#print(self.fuel_resource)
 

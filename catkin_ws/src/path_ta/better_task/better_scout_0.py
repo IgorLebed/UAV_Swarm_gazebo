@@ -81,6 +81,8 @@ from pickle import NONE
 #from re import template
 from sys import path
 
+from numpy.core.numeric import rollaxis
+
 
 from rospy.exceptions import ROSException, ROSInternalException
 
@@ -114,15 +116,15 @@ class swarm_parametr(object):
             path_cpp = []
             for line in ins:
                 path_cpp.append([float(line) for line in line.split()])# here send a list path_cpp
-        self.positions =path_cpp
-            #  (10,10,10),
-            #  (11,13,10),
-            #  (12,15,10),
-            #  (13,18,10),
-            #  (16,21,10),
-            #  (19,23,10),
-            #  (23,25,10)
-            #  )
+        self.positions = ( # path_cpp
+             (10,10,10),
+             (11,13,10),
+             (12,15,10),
+             (13,18,10),
+             (16,21,10),
+             (19,23,10),
+             (23,25,10)
+             )
         self.altutude_height = 20 
         #self.positions = ((int(x), int(y), 10),(int(x), int(y), 10))
 
@@ -385,10 +387,9 @@ class MavrosOffboardPosctlTest_0(MavrosTestCommon):
         #rospy.loginfo("You have 5 seconds to type in your stuff...") 
         foo = int(raw_input())
         return foo
-   
     #
     # -----------------------Flight mode's----------------------------
-    # 
+    #
     def global_path_flight_mode(self):
         takeoff_height = swarm_parametr().altutude_height
         positions = swarm_parametr().positions
@@ -508,7 +509,7 @@ class MavrosOffboardPosctlTest_0(MavrosTestCommon):
         #self.reach_position(int(self.local_position.pose.position.x), int(self.local_position.pose.position.x), 5, 30)
         time.sleep(5)
         work1 = False
-    
+
     def low_battery_mode(self):
         rospy.loginfo("This critical situation: %s", self.crit_sit.data[0])
         if (self.crit_sit.data[0] == NONE):
@@ -518,13 +519,15 @@ class MavrosOffboardPosctlTest_0(MavrosTestCommon):
             rospy.loginfo("LOW BATTERY!!!")
             rospy.loginfo("=============")
             for i in range(1, 3):
+                rospy.loginfo("Pub critical signal x, y = 1. sec %s", i)
+                self.change_bomber_mode.pose.position.x = 1
                 self.change_bomber_mode.pose.position.y = 1
                 time.sleep(1)
             self.set_mode("AUTO.RTL", 5)
             work0 = False    
     #
     # -----------------------Flight method----------------------------
-    # 
+    #
     def test_posctl(self):
         #self.set_model_state() #For test 
         #time.sleep(100)        #For test
@@ -532,16 +535,16 @@ class MavrosOffboardPosctlTest_0(MavrosTestCommon):
         #self.damage_calculate()
         """Send messages for crisis situation"""
         self.cargo_scout0.data = True
-        self.fuel_resource_scout0.data = 0.075
+        self.fuel_resource_scout0.data = 0.08
         self.fuel_consume_scout0.data = 0.8
 
         self.takeoff_point.x, self.takeoff_point.y = 0, 0
         self.grouping_point.x, self.grouping_point.y = 10, 10
         self.drop_point.x, self.drop_point.y = 100, 100
         self.landing_point.x, self.landing_point.y = 200, 50
-        
+
         """Test offboard position control"""
-        
+
         self.log_topic_vars()
         #self.set_mode("OFFBOARD", 5)
         #self.set_arm(True, 5)
@@ -564,31 +567,20 @@ class MavrosOffboardPosctlTest_0(MavrosTestCommon):
         rospy.loginfo("run mission")  
         self.damage_calculate()
         #self.global_path_flight_mode()
+
         work1 = True
         while (work1 == True):
-
             self.info_mode()
             try:
                 rospy.loginfo("Input: ")
                 self.exit_p_num = self.input()
                 rospy.loginfo("This is number: %s", self.exit_p_num)
                 self.low_battery_mode()
-            
+
             except ValueError:
                 rospy.loginfo("This is not num!")
                 work1 = True
-                rospy.loginfo("This critical situation: %s", self.crit_sit.data[0])
-                if (self.crit_sit.data[0] == NONE):
-                    rospy.loginfo("ERROR NONE VALUE")
-                elif (self.crit_sit.data[0] == 0):
-                    rospy.loginfo("=============")
-                    rospy.loginfo("LOW BATTERY!!!")
-                    rospy.loginfo("=============")
-                    for i in range(1, 3):
-                        self.change_bomber_mode.pose.position.y = 1
-                        time.sleep(1)
-                    self.set_mode("AUTO.RTL", 5)
-                    work0 = False
+                self.low_battery_mode()
             else:
                 if (self.exit_p_num == 1):
                     self.go_to_target_point_mode()

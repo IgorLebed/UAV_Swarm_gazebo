@@ -97,7 +97,6 @@ import better_scout_0 as uv
 
 
 class MavrosOffboardPosctlTest_1(MavrosTestCommon):
-
     """
     Tests flying a path in offboard control by sending position setpoints
     via MAVROS.
@@ -106,8 +105,6 @@ class MavrosOffboardPosctlTest_1(MavrosTestCommon):
 
     FIXME: add flight path assertion (needs transformation from ROS frame to NED)
     """
-    
-
     def setUp(self):
         super(MavrosOffboardPosctlTest_1, self).setUp()
 
@@ -125,9 +122,8 @@ class MavrosOffboardPosctlTest_1(MavrosTestCommon):
         
     def tearDown(self):
         super(MavrosOffboardPosctlTest_1, self).tearDown()
-
     #
-    # Helper methods
+    # ---------------------------Helper methods---------------------------
     #
     def send_pos(self):
         rate = rospy.Rate(10)  # Hz
@@ -200,98 +196,172 @@ class MavrosOffboardPosctlTest_1(MavrosTestCommon):
             format(self.local_position.pose.position.x,
                    self.local_position.pose.position.y,
                    self.local_position.pose.position.z, timeout)))
+    #
+    # Crisis situation-------------------------
+    #
+    def info_mode(self):
+        rospy.loginfo("Enter 1 FOLLOWER")
+        rospy.loginfo("Enter 2 Target Point")
+        rospy.loginfo("Enter 3 AUTO.LAND")
+        rospy.loginfo("Enter 4 AUTO.RTL")
+        rospy.loginfo("Enter 5 AUTO.TAKEOFF")
+        rospy.loginfo("Enter 9 Exit")   
+    #
+    #----------------------------Flight mode's-----------------------------
+    #
+    def glogal_path_flight(self):
+        takeoff_height = uv.swarm_parametr().altutude_height
+        positions = uv.swarm_parametr().positions
 
-    # Test method
+        self.set_mode("OFFBOARD", 5)
+
+        rospy.loginfo("run mission")                  
+        self.situation = 3
+        work0 = True
+        while (work0 == True):
+            for i in xrange(len(positions)):
+                self.damage_calculate()
+                rospy.loginfo("This critical situation: %s", self.situation)
+                if (self.scout0_check.pose.position.y == 1):
+                    rospy.loginfo("=============")
+                    rospy.loginfo("LOW BATTERY!!!")
+                    rospy.loginfo("=============")
+                    self.set_mode("AUTO.RTL", 5)
+                    work0 = False
+                elif (self.total_damage >= self.UPPER_DAMAGE_LIMIT):
+                    rospy.loginfo("Total damage: %s, Upper damage: %s", self.total_damage, self.UPPER_DAMAGE_LIMIT)
+                    self.set_mode("AUTO.LAND", 5)
+                    self.wait_for_landed_state(mavutil.mavlink.MAV_LANDED_STATE_ON_GROUND, 45, 0)
+                    self.set_model_state()
+                    self.unregister_subs()
+                    #self.set_arm(False, 5) 
+                    work0 = False
+                    break
+                elif(self.total_battery <= self.LOWER_BATTARY_LIMIT):
+                    rospy.loginfo("Total damage: %s, Upper damage: %s", self.total_battery, self.LOWER_BATTARY_LIMIT)
+                    rospy.WARN("Low Battary...")
+                    self.set_mode("AUTO.LAND", 5)
+                    self.wait_for_landed_state(mavutil.mavlink.MAV_LANDED_STATE_ON_GROUND, 45, 0)
+                else:
+                    rospy.loginfo("Total damage: %s, Upper damage: %s", self.total_damage, self.UPPER_DAMAGE_LIMIT)
+                    self.reach_position(positions[i][0], positions[i][1], takeoff_height, 99999) # X, Y, Z
+                    rospy.loginfo("%s" %(i))
+                    if (i+1 == len(positions)):
+                        work0 = False
+                        break
+
+    def follower_mode(self):
+        rospy.loginfo("Follower\nExit from program")
+        self.set_mode("OFFBOARD", 5)
+        #work = False
+        check =True
+        while (check == True):
+            if (self.scout0_check.pose.position.x != 1):
+                while (self.scout0_check.pose.position.x != 1 or self.scout0_check.pose.position.y !=1):
+                    self.set_mode("OFFBOARD", 5)
+                    scout_pose_x =  self.local_scout0_position.pose.position.x
+                    scout_pose_y =  self.local_scout0_position.pose.position.y
+                    scout_pose_z =  self.local_scout0_position.pose.position.z # test
+                    self.reach_position(int(scout_pose_x) + 2, int(scout_pose_y), int(scout_pose_z) - 2, 50) # X, Y, Z
+                    rospy.loginfo("local pos x: %s and pos y: %s ", scout_pose_x, scout_pose_y)
+                    #time.sleep(0.3)
+                if self.scout0_check.pose.position.x == 1:
+                    check = False
+                if self.scout0_check.pose.position.y == 1:
+                    self.rtl_mode() 
+
+    def target_point_mode(self):
+        rospy.loginfo("This is target fly mode")
+        self.set_mode("OFFBOARD", 5)
+        check =True
+        while (check == True):
+            try:
+                if (self.goal_pose_x == None and self.goal_pose_y == None):
+                    target_position_x = str(self.goal_pose_x)
+                    target_position_y = str(self.goal_pose_y)
+                    rospy.loginfo("Taget Pos: %s and %s",target_position_x, target_position_y)
+                    # if (self.scout0_check.pose.position.y == 1):
+                    #     #TODO pub 0 scout0_check
+                    #     check = False
+                    time.sleep(2)
+                else:
+                    while (self.scout0_check.pose.position.x == 1):
+                        self.set_mode("OFFBOARD", 5)
+                        pose_x =  self.goal_pose_x
+                        pose_y =  self.goal_pose_y
+                        pose_z =  13 #test
+                        self.reach_position(int(pose_x) + 2, int(pose_y), int(pose_z) - 2, 50) # X, Y, Z 
+                        time.sleep(0.3)      
+                    check = False   
+                    #work = False
+            except rospy.ROSInterruptException:
+                self.set_mode("AUTO.LOITER", 5)
+                check = False
+    
+    def landing_mode(self):
+        rospy.loginfo("Exit from program")
+        self.set_mode("AUTO.LAND", 5)
+        self.wait_for_landed_state(mavutil.mavlink.MAV_LANDED_STATE_ON_GROUND, 45, 0)
+        self.set_arm(False, 5)
+        work = False
+    
+    def rtl_mode(self):
+        rospy.loginfo("Return to launch")
+        self.set_mode("AUTO.RTL", 5)
+        work = False
+    
+    def takeoff_mode(self):
+        rospy.loginfo("=============")
+        rospy.loginfo("TAKEOFF MODE!!!")
+        rospy.loginfo("=============")
+        self.set_arm(True, 5)
+        self.set_mode("AUTO.TAKEOFF", 5)
+        #self.reach_position(int(self.local_position.pose.position.x), int(self.local_position.pose.position.x), 5, 30)
+        time.sleep(5)
+        work1 = False
+    #
+    # -----------------------Flight method----------------------------
+    #
     def test_posctl(self):
 
         """Test offboard position control"""
         self.log_topic_vars()
-        self.set_mode("OFFBOARD", 5)
+        #self.set_mode("OFFBOARD", 5)
         self.set_arm(True, 5)
         
         rospy.loginfo("This is boomber")
-        takeoff_height = uv.swarm_parametr().altutude_height
-        positions = uv.swarm_parametr().positions
-
-        rospy.loginfo("run mission")                  
-            
-        for i in xrange(len(positions)):
-            self.reach_position(positions[i][0], positions[i][1], takeoff_height, 30) # X, Y, Z
-            rospy.loginfo("%s" %(i))
 
         work = True
         while (work == True):
-            rospy.loginfo("Enter 1 FOLLOWER")
-            rospy.loginfo("Enter 2 Target Point")
-            rospy.loginfo("Enter 3 to go landing")
-            rospy.loginfo("Enter 4 AUTO.RTL")
+            self.info_mode()
             try:
                 rospy.loginfo("Input: ")
                 exit_p_num = int(raw_input())
-                rospy.loginfo("This is number: %s", exit_p_num)
-                
-                #rospy.loginfo("Position talker after input x: %s", path_ta.goal_pose_x)
-                #rospy.loginfo("Position talker after input y: %s", path_ta.goal_pose_y)
-
+                rospy.loginfo("This is number: %s", exit_p_num) 
             except ValueError:
                 rospy.loginfo("This is not num!")
                 work = True
             else:
                 if (exit_p_num == 1):
-                    rospy.loginfo("Follower\nExit from program")
-                    self.set_mode("OFFBOARD", 5)
-                    #work = False
-                    check =True
-                    while (check == True):
-                        if (self.scout0_check.pose.position.x != 1):
-                            while (self.scout0_check.pose.position.x != 1):
-                                self.set_mode("OFFBOARD", 5)
-                                scout_pose_x =  self.local_scout0_position.pose.position.x
-                                scout_pose_y =  self.local_scout0_position.pose.position.y
-                                scout_pose_z =  self.local_scout0_position.pose.position.z # test
-                                self.reach_position(int(scout_pose_x) + 2, int(scout_pose_y), int(scout_pose_z) - 2, 50) # X, Y, Z
-                                rospy.loginfo("local pos x: %s and pos y: %s ", scout_pose_x, scout_pose_y)
-                                time.sleep(0.3)
-                            if self.scout0_check.pose.position.x == 1:
-                                check = False
+                    self.follower_mode()
                 elif (exit_p_num == 2):
-                    rospy.loginfo("This is target fly mode")
-                    self.set_mode("OFFBOARD", 5)
-                    check =True
-                    while (check == True):
-                        try:
-                            if (self.goal_pose_x == None and self.goal_pose_y == None):
-                                target_position_x = str(self.goal_pose_x)
-                                target_position_y = str(self.goal_pose_y)
-                                rospy.loginfo("Taget Pos: %s and %s",target_position_x, target_position_y)
-                                # if (self.scout0_check.pose.position.y == 1):
-                                #     #TODO pub 0 scout0_check
-                                #     check = False
-                                time.sleep(2)
-                            else:
-                                while (self.scout0_check.pose.position.x == 1):
-                                    self.set_mode("OFFBOARD", 5)
-                                    pose_x =  self.goal_pose_x
-                                    pose_y =  self.goal_pose_y
-                                    pose_z =  13 #test
-                                    self.reach_position(int(pose_x) + 2, int(pose_y), int(pose_z) - 2, 50) # X, Y, Z 
-                                    time.sleep(0.3)      
-                                check = False   
-                                #work = False
-                        except rospy.ROSInterruptException:
-                            self.set_mode("AUTO.LOITER", 5)
-                            check = False
+                    self.target_point_mode()
                 elif (exit_p_num == 3):
-                    rospy.loginfo("Exit from program")
-                    self.set_mode("AUTO.LAND", 5)
-                    self.wait_for_landed_state(mavutil.mavlink.MAV_LANDED_STATE_ON_GROUND, 45, 0)
-                    self.set_arm(False, 5)
-                    work = False
+                    self.landing_mode()
                 elif (exit_p_num == 4):
-                    rospy.loginfo("Return to launch")
-                    self.set_mode("AUTO.RTL", 5)
+                    self.rtl_mode()
+                elif (exit_p_num == 5):
+                    self.takeoff_mode()    
+                elif (exit_p_num == 9):
                     work = False
-                elif (exit_p_num != 1 or exit_p_num != 2 or exit_p_num != 3 or exit_p_num != 4):
+                    break
+                elif (exit_p_num != 1 or
+                      exit_p_num != 2 or 
+                      exit_p_num != 3 or
+                      exit_p_num != 4 or
+                      exit_p_num != 5 or 
+                      exit_p_num != 9
+                      ):
                     rospy.loginfo("Try again!")
                     work = True
 

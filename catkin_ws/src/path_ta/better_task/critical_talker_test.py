@@ -97,10 +97,6 @@ fuel_consume_bomber3 = Float64()
 
 
 
-
-
-
-
 active_pose_scout0.pose.position.x, active_pose_scout0.pose.position.y = 30, 30
 armed_scout0.armed = True
 cargo_scout0.data = True
