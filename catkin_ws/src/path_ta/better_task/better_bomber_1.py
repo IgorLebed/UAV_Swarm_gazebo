@@ -90,7 +90,7 @@ from six.moves import xrange
 from std_msgs.msg import Header
 from threading import Thread
 from tf.transformations import quaternion_from_euler
-from std_msgs.msg import String
+from std_msgs.msg import String, Header, Float64, Bool
 import time
 import better_scout_0 as uv
 #import setpoint_listener as path_ta
@@ -109,21 +109,45 @@ class MavrosOffboardPosctlTest_1(MavrosTestCommon):
         super(MavrosOffboardPosctlTest_1, self).setUp()
 
         self.pos = PoseStamped()
+        self.cargo_bomber1 = Bool()
+        self.fuel_resource_bomber1 = Float64()
+        self.fuel_consume_bomber1 = Float64()
+
         self.radius = 1
 
         self.pos_setpoint_pub = rospy.Publisher('/bomber1/mavros/setpoint_position/local', PoseStamped, queue_size=1)
+        #-------------------------------Crisis Situation-------------------------------------
+        self.cargo_bomber1_publisher = rospy.Publisher("/bomber1/cargo", Bool, queue_size=10)
+        self.fuel_resource_bomber1_publisher = rospy.Publisher("/bomber1/fuel_resource", Float64, queue_size=10)
+        self.fuel_consume_bomber1_publisher = rospy.Publisher("/bomber1/fuel_consume", Float64, queue_size=10)
 
         # send setpoints in seperate thread to better prevent failsafe
         self.pos_thread = Thread(target=self.send_pos, args=())
         self.pos_thread.daemon = True
         self.pos_thread.start()
+
+        # send cargo scout in seperate thread to better prevent failsafe
+        self.cargo_thread = Thread(target=self.send_cargo, args=())
+        self.cargo_thread.daemon = True
+        self.cargo_thread.start()
+
+        # send fuel_resource in seperate thread to better prevent failsafe
+        self.fuel_resource_thread = Thread(target=self.send_fuel_resource, args=())
+        self.fuel_resource_thread.daemon = True
+        self.fuel_resource_thread.start()
+        
+        # send fuel_consume in seperate thread to better prevent failsafe
+        self.fuel_consume_thread = Thread(target=self.send_fuel_consume, args=())
+        self.fuel_consume_thread.daemon = True
+        self.fuel_consume_thread.start()
+
         global takeoff_height
         takeoff_height = 2
         
     def tearDown(self):
         super(MavrosOffboardPosctlTest_1, self).tearDown()
     #
-    # ---------------------------Helper methods---------------------------
+    # ---------------------------Publisher's methods---------------------------
     #
     def send_pos(self):
         rate = rospy.Rate(10)  # Hz
@@ -138,6 +162,9 @@ class MavrosOffboardPosctlTest_1(MavrosTestCommon):
             except rospy.ROSInterruptException:
                 pass
 
+    #
+    # ---------------------------Helper methods---------------------------
+    #
     def is_at_position(self, x, y, z, offset):
         """offset: meters"""
         rospy.logdebug(
@@ -199,6 +226,33 @@ class MavrosOffboardPosctlTest_1(MavrosTestCommon):
     #
     # Crisis situation-------------------------
     #
+    def send_cargo(self):
+        rate = rospy.Rate(10)  # Hz
+        while not rospy.is_shutdown():
+            self.cargo_bomber1_publisher.publish(self.cargo_bomber1)
+            try:  # prevent garbage in console output when thread is killed
+                rate.sleep()
+            except rospy.ROSInterruptException:
+                pass
+
+    def send_fuel_resource(self):
+        rate = rospy.Rate(10)  # Hz
+        while not rospy.is_shutdown():
+            self.fuel_resource_bomber1_publisher.publish(self.fuel_resource_bomber1)
+            try:  # prevent garbage in console output when thread is killed
+                rate.sleep()
+            except rospy.ROSInterruptException:
+                pass
+
+    def send_fuel_consume(self):
+            rate = rospy.Rate(10)  # Hz
+            while not rospy.is_shutdown():
+                self.fuel_consume_bomber1_publisher.publish(self.fuel_consume_bomber1)
+                try:  # prevent garbage in console output when thread is killed
+                    rate.sleep()
+                except rospy.ROSInterruptException:
+                    pass
+    
     def info_mode(self):
         rospy.loginfo("Enter 1 FOLLOWER")
         rospy.loginfo("Enter 2 Target Point")
@@ -206,6 +260,12 @@ class MavrosOffboardPosctlTest_1(MavrosTestCommon):
         rospy.loginfo("Enter 4 AUTO.RTL")
         rospy.loginfo("Enter 5 AUTO.TAKEOFF")
         rospy.loginfo("Enter 9 Exit")   
+    
+    def crisis_mode(self):
+        rospy.loginfo("=============")
+        rospy.loginfo("LOW BATTERY!!!")
+        rospy.loginfo("=============")
+        self.rtl_mode()
     #
     #----------------------------Flight mode's-----------------------------
     #
@@ -264,11 +324,18 @@ class MavrosOffboardPosctlTest_1(MavrosTestCommon):
                     scout_pose_z =  self.local_scout0_position.pose.position.z # test
                     self.reach_position(int(scout_pose_x) + 2, int(scout_pose_y), int(scout_pose_z) - 2, 50) # X, Y, Z
                     rospy.loginfo("local pos x: %s and pos y: %s ", scout_pose_x, scout_pose_y)
+                    if (self.personal_land.pose.position.x == 1):
+                        self.scout0_check.pose.position.x = 1
+                        self.scout0_check.pose.position.y = 1
+                        self.crisis_mode()
+                        check = False
+                        break
                     #time.sleep(0.3)
-                if self.scout0_check.pose.position.x == 1:
+                if self.scout0_check.pose.position.x == 1: #exit form this mode
                     check = False
-                if self.scout0_check.pose.position.y == 1:
-                    self.rtl_mode() 
+                if self.scout0_check.pose.position.y == 1: #critical situation
+                    self.crisis_mode()
+                    check = False 
 
     def target_point_mode(self):
         rospy.loginfo("This is target fly mode")
@@ -323,12 +390,16 @@ class MavrosOffboardPosctlTest_1(MavrosTestCommon):
     # -----------------------Flight method----------------------------
     #
     def test_posctl(self):
+        """Send messages for crisis situation"""
+        self.cargo_bomber1.data = True
+        self.fuel_resource_bomber1.data = 0.08
+        self.fuel_consume_bomber1.data = 0.8
 
         """Test offboard position control"""
         self.log_topic_vars()
         #self.set_mode("OFFBOARD", 5)
         self.set_arm(True, 5)
-        
+
         rospy.loginfo("This is boomber")
 
         work = True

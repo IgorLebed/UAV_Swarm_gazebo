@@ -6,6 +6,9 @@ import math
 from geometry_msgs.msg import PoseStamped
 from mavros_msgs.msg import Altitude, ExtendedState, HomePosition, State, WaypointList
 from mavros_msgs.srv import CommandBool, ParamGet, SetMode, WaypointClear, WaypointPush
+from gazebo_msgs.srv import SetModelState, GetModelState, GetModelProperties, SpawnModel, GetWorldProperties, GetLinkState, DeleteModel
+from gazebo_msgs.msg import ModelState
+
 from pymavlink import mavutil
 from rospy.exceptions import ROSInternalException
 from sensor_msgs.msg import NavSatFix, Imu
@@ -37,6 +40,7 @@ class MavrosTestCommon(unittest.TestCase):
         self.scout0_check = PoseStamped()
         self.damage = Float32()
         self.scout0_state = State()
+        self.personal_land = PoseStamped()
         #-----
         self.mission_wp = WaypointList()
         self.state = State()
@@ -54,7 +58,8 @@ class MavrosTestCommon(unittest.TestCase):
          'local_scout0_pos',
          'scout0_state',
          'scout0_check',
-         'damage']}
+         'damage',
+         'personal_land']}
         service_timeout = 30
         rospy.loginfo('waiting for ROS services')
         try:
@@ -87,6 +92,7 @@ class MavrosTestCommon(unittest.TestCase):
         self.local_scout0_pos_sub = rospy.Subscriber('/scout0/mavros/local_position/pose', PoseStamped, self.local_scout0_position_callback)
         self.scout0_check_sub = rospy.Subscriber('/scout0/mavros/check_mission', PoseStamped, self.scout0_check_callback)
         self.def_prob_sub = rospy.Subscriber('/bomber1/damage', Float32, self.damage_callback)
+        self.personal_land_sub = rospy.Subscriber('/bomber1/mavros/personal_land/check_mission', PoseStamped, self.personal_land_callback)
         #---
         return
 
@@ -103,6 +109,11 @@ class MavrosTestCommon(unittest.TestCase):
     def goal_pos_callback(self, data):
         self.goal_pose_x = data.x
         self.goal_pose_y = data.y
+   
+    def personal_land_callback(self, data):
+        self.personal_land = data
+        if not self.sub_topics_ready['personal_land']:
+            self.sub_topics_ready['personal_land'] = True
     #
     # --------------Standart_Callback------------
     #

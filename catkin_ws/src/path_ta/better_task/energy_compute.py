@@ -253,23 +253,23 @@ if __name__ == "__main__":
 	battery_bomber_info = rospy.Publisher("bomber/battery_status_info", Float64MultiArray, queue_size=10)
 	# Init UAV's
 	scout0 = UAV("ralx6", "scout", 0)
-	# bomber1 = UAV("ralx6", "bomber", 1)
-	# bomber2 = UAV("ralx6", "bomber", 2)
-	# bomber3 = UAV("ralx6", "bomber", 3)
+	bomber1 = UAV("ralx6", "bomber", 1)
+	bomber2 = UAV("ralx6", "bomber", 2)
+	bomber3 = UAV("ralx6", "bomber", 3)
 
-	# uavs = [scout0, bomber1, bomber2, bomber3]
-	uavs = [scout0]
+	uavs = [scout0, bomber1, bomber2, bomber3]
+	#uavs = [scout0, bomber1]
 
 	scout0.fuel_resource = scout0.fuel_resource_subscribe.data
 	scout0.fuel_consume = scout0.fuel_consume_subscribe.data
 	
-	# bomber1.fuel_resource = bomber1.fuel_resource_subscribe.data
-	# bomber1.fuel_consume = bomber1.fuel_consume_subscribe.data
+	bomber1.fuel_resource = bomber1.fuel_resource_subscribe.data
+	bomber1.fuel_consume = bomber1.fuel_consume_subscribe.data
 	
-	# bomber2.fuel_resource = bomber2.fuel_resource_subscribe.data
-	# bomber2.fuel_consume = bomber2.fuel_consume_subscribe.data
+	bomber2.fuel_resource = bomber2.fuel_resource_subscribe.data
+	bomber2.fuel_consume = bomber2.fuel_consume_subscribe.data
 	
-	# bomber3.fuel_resource = bomber3.fuel_resource_subscribe.data
-	# bomber3.fuel_consume = bomber3.fuel_consume_subscribe.data
+	bomber3.fuel_resource = bomber3.fuel_resource_subscribe.data
+	bomber3.fuel_consume = bomber3.fuel_consume_subscribe.data
 
 	start(uavs)	

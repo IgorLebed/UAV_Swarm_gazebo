@@ -82,8 +82,7 @@ from pickle import NONE
 from sys import path
 
 from numpy.core.numeric import rollaxis
-
-
+from numpy.lib.function_base import select
 from rospy.exceptions import ROSException, ROSInternalException
 
 
@@ -112,19 +111,19 @@ class swarm_parametr(object):
 
         #x = MavrosTestCommon().goal_pose_x
         #y = MavrosTestCommon().goal_pose_y
-        with open("/media/igor/LaCie/UAV_Swarm_gazebo/catkin_ws/src/path_planning/scripts/path_global_wind.txt", "r") as ins:
+        with open("UAV_Swarm_gazebo/catkin_ws/src/path_planning/scripts/path_global_wind.txt", "r") as ins:
             path_cpp = []
             for line in ins:
                 path_cpp.append([float(line) for line in line.split()])# here send a list path_cpp
-        self.positions = ( # path_cpp
-             (10,10,10),
-             (11,13,10),
-             (12,15,10),
-             (13,18,10),
-             (16,21,10),
-             (19,23,10),
-             (23,25,10)
-             )
+        self.positions = path_cpp
+            #  (10,10,10),
+            #  (11,13,10),
+            #  (12,15,10),
+            #  (13,18,10),
+            #  (16,21,10),
+            #  (19,23,10),
+            #  (23,25,10)
+            #  )
         self.altutude_height = 20 
         #self.positions = ((int(x), int(y), 10),(int(x), int(y), 10))
 
@@ -145,8 +144,10 @@ class MavrosOffboardPosctlTest_0(MavrosTestCommon):
         self.change_bomber_mode= PoseStamped()
         self.check_battery_scout = Float64()
         self.radius = 30
-
         #armed_scout0 = State()
+        for i in range(1, 20):
+            self.__dict__['personal_land%d' % i] = PoseStamped()
+
         self.cargo_scout0 = Bool()
         self.fuel_resource_scout0 = Float64()
         self.fuel_consume_scout0 = Float64()
@@ -158,6 +159,12 @@ class MavrosOffboardPosctlTest_0(MavrosTestCommon):
         
         self.pos_setpoint_pub = rospy.Publisher('/scout0/mavros/setpoint_position/local', PoseStamped, queue_size=1)
         self.check_pub = rospy.Publisher('/scout0/mavros/check_mission', PoseStamped, queue_size=1)
+        
+        #TODO PROBLEM!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        for uav_id in range(1, 20):
+            self.__dict__['crit_sit_one_pub%d' % uav_id] = rospy.Publisher('/bomber' + str(uav_id) + '/mavros/personal_land/check_mission', PoseStamped, queue_size=1)
+    
+
         self.check_battery_pub = rospy.Publisher('/scout0/mavros/battery_status', Float64, queue_size=1)
 
         #-------------------------------Crisis Situation-------------------------------------
@@ -185,7 +192,7 @@ class MavrosOffboardPosctlTest_0(MavrosTestCommon):
         self.check_battery_thread.daemon = True
         self.check_battery_thread.start()
 
-        # send check scout in seperate thread to better prevent failsafe
+        # send cargo scout in seperate thread to better prevent failsafe
         self.cargo_thread = Thread(target=self.send_cargo, args=())
         self.cargo_thread.daemon = True
         self.cargo_thread.start()
@@ -199,6 +206,11 @@ class MavrosOffboardPosctlTest_0(MavrosTestCommon):
         self.fuel_resource_thread = Thread(target=self.send_fuel_resource, args=())
         self.fuel_resource_thread.daemon = True
         self.fuel_resource_thread.start()
+
+        # send personal in seperate thread to better prevent failsafe
+        self.personal_thread = Thread(target=self.send_personal, args=())
+        self.personal_thread.daemon = True
+        self.personal_thread.start()
 
         global takeoff_height
 
@@ -319,6 +331,16 @@ class MavrosOffboardPosctlTest_0(MavrosTestCommon):
             except rospy.ROSInterruptException:
                 pass
 
+    def send_personal(self):
+        rate = rospy.Rate(10)  # Hz
+        while not rospy.is_shutdown():
+            for i in range(1, 20):
+                self.__dict__['crit_sit_one_pub%d' % i].publish(self.__dict__['personal_land%d' % i])
+            try:  # prevent garbage in console output when thread is killed
+                rate.sleep()
+            except rospy.ROSInterruptException:
+                pass
+
     def send_fuel_resource(self):
         rate = rospy.Rate(10)  # Hz
         while not rospy.is_shutdown():
@@ -400,22 +422,7 @@ class MavrosOffboardPosctlTest_0(MavrosTestCommon):
         while (work0 == True):
             for i in xrange(len(positions)):
                 self.damage_calculate()
-                rospy.loginfo("This critical situation: %s", self.crit_sit.data[0])
-                if (self.crit_sit.data[0] == NONE):
-                    rospy.loginfo("ERROR NONE VALUE")
-                elif (self.crit_sit.data[0] == 0):
-                    rospy.loginfo("=============")
-                    rospy.loginfo("LOW BATTERY!!!")
-                    rospy.loginfo("=============")
-                    i = 0
-                    while (i < 3):
-                        self.change_bomber_mode.pose.position.y = 1
-                        rospy.loginfo("Pub 'y' = 1")
-                        i += 1
-                        time.sleep(1)
-                    self.set_mode("AUTO.RTL", 5)
-                    work0 = False
-                    break
+                self.low_battery_mode()
                 if (self.total_damage >= self.UPPER_DAMAGE_LIMIT):
                     rospy.loginfo("Total damage: %s, Upper damage: %s", self.total_damage, self.UPPER_DAMAGE_LIMIT)
                     self.set_mode("AUTO.LAND", 5)
@@ -511,10 +518,11 @@ class MavrosOffboardPosctlTest_0(MavrosTestCommon):
         work1 = False
 
     def low_battery_mode(self):
+
         rospy.loginfo("This critical situation: %s", self.crit_sit.data[0])
         if (self.crit_sit.data[0] == NONE):
             rospy.loginfo("ERROR NONE VALUE")
-        elif (self.crit_sit.data[0] == 0):
+        elif (self.crit_sit.data[0] == 0): # crisis situation for all drone
             rospy.loginfo("=============")
             rospy.loginfo("LOW BATTERY!!!")
             rospy.loginfo("=============")
@@ -524,18 +532,42 @@ class MavrosOffboardPosctlTest_0(MavrosTestCommon):
                 self.change_bomber_mode.pose.position.y = 1
                 time.sleep(1)
             self.set_mode("AUTO.RTL", 5)
-            work0 = False    
+            work0 = False
+            return work0
+        elif (self.crit_sit.data[0] == 1): # crisis situation for the drone
+            check_status = True
+            while check_status:
+                try: 
+                    #self.crit_sit.data[0]
+                    self.id_drone = self.crit_sit.data[1]
+                    self.__dict__['personal_land%d' % self.id_drone].pose.position.x = 1
+                    rospy.loginfo("=============")
+                    rospy.loginfo("LOW BATTERY!!!")
+                    rospy.loginfo("=============")
+                    rospy.loginfo("YES VALUE!")
+                    
+                    time.sleep(2)
+                except:
+                    self.crit_sit.data[0] = 0
+                    rospy.loginfo("NO VALUE!")
+                    self.set_arm(True, 5)
+                    time.sleep(2)
+                else: 
+                    check_status = False
+
     #
     # -----------------------Flight method----------------------------
     #
     def test_posctl(self):
+        self.id_drone = 0
+        """Test respawn in start mission point"""
         #self.set_model_state() #For test 
         #time.sleep(100)        #For test
 
         #self.damage_calculate()
         """Send messages for crisis situation"""
         self.cargo_scout0.data = True
-        self.fuel_resource_scout0.data = 0.08
+        self.fuel_resource_scout0.data = 0.18
         self.fuel_consume_scout0.data = 0.8
 
         self.takeoff_point.x, self.takeoff_point.y = 0, 0
