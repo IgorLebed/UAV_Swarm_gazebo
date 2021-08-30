@@ -392,7 +392,7 @@ class MavrosOffboardPosctlTest_3(MavrosTestCommon):
     def test_posctl(self):
         """Send messages for crisis situation"""
         self.cargo_bomber3.data = True
-        self.fuel_resource_bomber3.data = 0.24
+        self.fuel_resource_bomber3.data = 0.14
         self.fuel_consume_bomber3.data = 0.8
 
         """Test offboard position control"""
