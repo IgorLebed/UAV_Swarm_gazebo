@@ -81,8 +81,6 @@ from pickle import NONE
 #from re import template
 from sys import path
 
-from numpy.core.numeric import rollaxis
-from numpy.lib.function_base import select
 from rospy.exceptions import ROSException, ROSInternalException
 
 
@@ -452,9 +450,9 @@ class MavrosOffboardPosctlTest_0(MavrosTestCommon):
         check = True
         while (check == True):#(self.goal_pose_x == None and self.goal_pose_y == None):
             try:
-                if (self.scout0_exit_mode.pose.position.y == 1):
+                if (self.scout0_exit_mode.data == True):
                         self.set_mode("AUTO.LOITER", 5) 
-                        while (self.scout0_exit_mode.pose.position.y == 1):
+                        while (self.scout0_exit_mode.data == True):
                             rospy.loginfo("Pub 1")
                             self.change_bomber_mode.pose.position.x = 1
                             time.sleep(2)
@@ -465,7 +463,7 @@ class MavrosOffboardPosctlTest_0(MavrosTestCommon):
                     target_position_x = str(self.goal_pose_x)
                     target_position_y = str(self.goal_pose_y)
                     rospy.loginfo("Taget Pos: %s and %s",target_position_x, target_position_y)
-                    if (self.scout0_exit_mode.pose.position.y == 1):
+                    if (self.scout0_exit_mode.data == True):
                         #TODO pub 0 scout0_exit_mode
                         check = False
                     time.sleep(2)
@@ -512,10 +510,12 @@ class MavrosOffboardPosctlTest_0(MavrosTestCommon):
         rospy.loginfo("TAKEOFF MODE!!!")
         rospy.loginfo("=============")
         self.set_arm(True, 5)
-        self.set_mode("AUTO.TAKEOFF", 5)
-        #self.reach_position(int(self.local_position.pose.position.x), int(self.local_position.pose.position.x), 5, 30)
+        #self.set_mode("AUTO.TAKEOFF", 5)
+        #time.sleep(5)
+        self.set_mode("OFFBOARD", 5)
+        self.reach_position(int(self.local_position.pose.position.x), int(self.local_position.pose.position.x), 10, 30)
         time.sleep(5)
-        work1 = False
+        #work1 = False
 
     def low_battery_mode(self):
 
@@ -554,7 +554,6 @@ class MavrosOffboardPosctlTest_0(MavrosTestCommon):
                     time.sleep(2)
                 else: 
                     check_status = False
-
     #
     # -----------------------Flight method----------------------------
     #
@@ -600,43 +599,54 @@ class MavrosOffboardPosctlTest_0(MavrosTestCommon):
         self.damage_calculate()
         #self.global_path_flight_mode()
 
-        work1 = True
+        #self.start_mission.data = False     # Rewrite value, if start mission have old value
+        work1 = True                        # While true menu working and have you may change other flight mode, with the exeption 9 mode "exit"
         while (work1 == True):
-            self.info_mode()
             try:
-                rospy.loginfo("Input: ")
-                self.exit_p_num = self.input()
-                rospy.loginfo("This is number: %s", self.exit_p_num)
-                self.low_battery_mode()
+                if (self.start_mission.data == False):
+                    self.info_mode()
+                    rospy.loginfo("Input: ")
+                    self.exit_p_num = self.input()
+                    rospy.loginfo("This is number: %s", self.exit_p_num)
+                    self.low_battery_mode()
+                else:
+                    rospy.loginfo("LOADING...")
 
             except ValueError:
                 rospy.loginfo("This is not num!")
                 work1 = True
                 self.low_battery_mode()
             else:
-                if (self.exit_p_num == 1):
-                    self.go_to_target_point_mode()
-                elif (self.exit_p_num == 2):
-                    rospy.loginfo("This is global path")
-                    self.global_path_flight_mode()
-                elif (self.exit_p_num == 3):
-                    self.landing_mode()
-                elif (self.exit_p_num == 4):
-                    self.rtl_mode()
-                elif (self.exit_p_num == 5):
-                    self.takeoff_mode()    
-                elif (self.exit_p_num == 9):
-                    work1 = False
-                    break
-                elif (self.exit_p_num != 1 or
-                      self.exit_p_num != 2 or
-                      self.exit_p_num != 3 or 
-                      self.exit_p_num != 4 or
-                      self.exit_p_num != 5 or
-                      self.exit_p_num != 9 
-                      ):
-                    rospy.loginfo("Try again!")
-                    work1 = True
+                if self.start_mission.data == False:
+                    if (self.exit_p_num == 1):
+                        self.go_to_target_point_mode()
+                    elif (self.exit_p_num == 2):
+                        rospy.loginfo("This is global path")
+                        self.global_path_flight_mode()
+                    elif (self.exit_p_num == 3):
+                        self.landing_mode()
+                    elif (self.exit_p_num == 4):
+                        self.rtl_mode()
+                    elif (self.exit_p_num == 5):
+                        self.takeoff_mode()    
+                    elif (self.exit_p_num == 9):
+                        work1 = False
+                        break
+                    #----
+                    elif (self.exit_p_num != 1 or
+                        self.exit_p_num != 2 or
+                        self.exit_p_num != 3 or 
+                        self.exit_p_num != 4 or
+                        self.exit_p_num != 5 or
+                        self.exit_p_num != 9 
+                        ):
+                        rospy.loginfo("Try again!")
+                        work1 = True
+                else :
+                    rospy.loginfo("===========")
+                    rospy.loginfo("RUN MISSION!")
+                    rospy.loginfo("===========")
+                    time.sleep(5)
 
 if __name__ == '__main__':
     import rostest

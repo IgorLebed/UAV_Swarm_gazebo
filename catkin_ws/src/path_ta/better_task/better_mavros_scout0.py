@@ -14,7 +14,7 @@ from rospy.exceptions import ROSInternalException
 from sensor_msgs.msg import NavSatFix, Imu
 from six.moves import xrange
 from geometry_msgs.msg import Point
-from std_msgs.msg import Float32, Int64MultiArray
+from std_msgs.msg import Float32, Int64MultiArray, Bool
 
 class MavrosTestCommon(unittest.TestCase):
     goal_pose_x = None
@@ -32,6 +32,7 @@ class MavrosTestCommon(unittest.TestCase):
         self.total_battery = 100
 
         self.TIMEOUT = 5
+    
     def setUp(self):
         self.altitude = Altitude()
         self.extended_state = ExtendedState()
@@ -44,10 +45,11 @@ class MavrosTestCommon(unittest.TestCase):
         self.mav_type = None
         #-----
         self.target_sub = Point()
-        self.scout0_exit_mode = PoseStamped()
+        self.scout0_exit_mode = Bool()
         self.damage = Float32()
         self.battery = Float32()
         self.crit_sit = Int64MultiArray()
+        self.start_mission = Bool()
 
         self.state_msg = ModelState()
         self.sub_topics_ready = {key:False for key in ['alt',
@@ -62,7 +64,8 @@ class MavrosTestCommon(unittest.TestCase):
          'scout0_exit_mode',
          'damage',
          'battery',
-         'crit_sit']}
+         'crit_sit',
+         'scout0_start_mission']}
         service_timeout = 30
         rospy.loginfo('waiting for ROS services')
         try:
@@ -91,20 +94,19 @@ class MavrosTestCommon(unittest.TestCase):
         self.local_pos_sub = rospy.Subscriber('/scout0/mavros/local_position/pose', PoseStamped, self.local_position_callback)
         self.mission_wp_sub = rospy.Subscriber('/scout0/mavros/mission/waypoints', WaypointList, self.mission_wp_callback)
         self.state_sub = rospy.Subscriber('/scout0/mavros/state', State, self.state_callback)
-        
         #
         #------------------------------------My_Tipic_List-----------------------------------------------------------------
-        #s
+        #
         self.target_sub = rospy.Subscriber('/scout0/target_point/position', Point, self.goal_pos_callback)
-        self.scout0_exit_mode_sub = rospy.Subscriber('/scout0/mavros/check_mission/stop', PoseStamped, self.scout0_exit_mode_callback)
+        self.scout0_exit_mode_sub = rospy.Subscriber('/scout0/mavros/check_mission/stop', Bool, self.scout0_exit_mode_callback)
         self.def_prob_sub = rospy.Subscriber('/scout0/damage', Float32, self.damage_callback)
         self.battery_sub = rospy.Subscriber('/scout0/battery', Float32, self.battery_callback)
         self.crit_sit_info_sub = rospy.Subscriber('/critical_status_info', Int64MultiArray, self.crit_sit_info_callback)
+        self.start_mission_sub = rospy.Subscriber('/scout0/start_mission', Bool, self.start_mission_callback)
         return
 
     def tearDown(self):
         self.log_topic_vars()
-
     #
     # ----------------My_Callback-------------------
     #
@@ -131,6 +133,11 @@ class MavrosTestCommon(unittest.TestCase):
         self.crit_sit = data
         if not self.sub_topics_ready['crit_sit']:
             self.sub_topics_ready['crit_sit'] = True
+    
+    def start_mission_callback(self, data):
+        self.start_mission = data
+        if not self.sub_topics_ready['scout0_start_mission']:
+            self.sub_topics_ready['scout0_start_mission'] = True
     #
     # --------------Standart_Callback------------
     #
