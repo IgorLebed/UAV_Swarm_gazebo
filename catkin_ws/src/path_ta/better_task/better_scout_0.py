@@ -141,6 +141,7 @@ class MavrosOffboardPosctlTest_0(MavrosTestCommon):
         self.pos = PoseStamped()
         self.change_bomber_mode= PoseStamped()
         self.check_battery_scout = Float64()
+        self.follower_mode = Bool()
         self.radius = 30
         #armed_scout0 = State()
         for i in range(1, 20):
@@ -157,6 +158,7 @@ class MavrosOffboardPosctlTest_0(MavrosTestCommon):
         
         self.pos_setpoint_pub = rospy.Publisher('/scout0/mavros/setpoint_position/local', PoseStamped, queue_size=1)
         self.check_pub = rospy.Publisher('/scout0/mavros/check_mission', PoseStamped, queue_size=1)
+        self.follower_mode_pub = rospy.Publisher('/scout0/followe_mode', Bool, queue_size=1 )
         
         #TODO PROBLEM!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         for uav_id in range(1, 20):
@@ -209,6 +211,11 @@ class MavrosOffboardPosctlTest_0(MavrosTestCommon):
         self.personal_thread = Thread(target=self.send_personal, args=())
         self.personal_thread.daemon = True
         self.personal_thread.start()
+
+        # send follow in seperate thread to better prevent failsafe
+        self.follower_mode_thread = Thread(target=self.send_follower_mode, args=())
+        self.follower_mode_thread.daemon = True
+        self.follower_mode_thread.start()
 
         global takeoff_height
 
@@ -407,6 +414,18 @@ class MavrosOffboardPosctlTest_0(MavrosTestCommon):
         #rospy.loginfo("You have 5 seconds to type in your stuff...") 
         foo = int(raw_input())
         return foo
+    
+    # ---------------------FOR MISSION MODE--------------------------
+    #
+    def send_follower_mode(self):
+        rate = rospy.Rate(10)  # Hz
+        while not rospy.is_shutdown():
+            self.follower_mode_pub.publish(self.follower_mode)
+            try:  # prevent garbage in console output when thread is killed
+                rate.sleep()
+            except rospy.ROSInterruptException:
+                pass
+    
     #
     # -----------------------Flight mode's----------------------------
     #
@@ -418,7 +437,8 @@ class MavrosOffboardPosctlTest_0(MavrosTestCommon):
 
         work0 = True
         while (work0 == True):
-            for i in xrange(len(positions)):
+            first_point = 0
+            for i in xrange(first_point, len(positions)):
                 self.damage_calculate()
                 self.low_battery_mode()
                 if (self.total_damage >= self.UPPER_DAMAGE_LIMIT):
@@ -432,10 +452,12 @@ class MavrosOffboardPosctlTest_0(MavrosTestCommon):
                     break
                 elif(self.total_battery <= self.LOWER_BATTARY_LIMIT):
                     rospy.loginfo("Total damage: %s, Upper damage: %s", self.total_battery, self.LOWER_BATTARY_LIMIT)
-                    rospy.WARN("Low Battary...")
+                    rospy.logwarn("Low Battary...")
                     self.set_mode("AUTO.LAND", 5)
                     self.wait_for_landed_state(mavutil.mavlink.MAV_LANDED_STATE_ON_GROUND, 45, 0)
                 else:
+                    if ('TODO: '):
+                        rospy.logwarn("Target Find")
                     rospy.loginfo("Total damage: %s, Upper damage: %s", self.total_damage, self.UPPER_DAMAGE_LIMIT)
                     self.reach_position(positions[i][0], positions[i][1], takeoff_height, 99999) # X, Y, Z
                     rospy.loginfo("%s" %(i))
@@ -458,7 +480,6 @@ class MavrosOffboardPosctlTest_0(MavrosTestCommon):
                             time.sleep(2)
                         self.change_bomber_mode.pose.position.x = 0
                         check = False 
-                        
                 elif (self.goal_pose_x == None and self.goal_pose_y == None):
                     target_position_x = str(self.goal_pose_x)
                     target_position_y = str(self.goal_pose_y)
@@ -514,6 +535,7 @@ class MavrosOffboardPosctlTest_0(MavrosTestCommon):
         #time.sleep(5)
         self.set_mode("OFFBOARD", 5)
         self.reach_position(int(self.local_position.pose.position.x), int(self.local_position.pose.position.x), 10, 30)
+        self.low_battery_mode()
         time.sleep(5)
         #work1 = False
 
@@ -523,9 +545,9 @@ class MavrosOffboardPosctlTest_0(MavrosTestCommon):
         if (self.crit_sit.data[0] == NONE):
             rospy.loginfo("ERROR NONE VALUE")
         elif (self.crit_sit.data[0] == 0): # crisis situation for all drone
-            rospy.loginfo("=============")
-            rospy.loginfo("LOW BATTERY!!!")
-            rospy.loginfo("=============")
+            rospy.logerr("=============")
+            rospy.logerr("LOW BATTERY!!!")
+            rospy.logerr("=============")
             for i in range(1, 3):
                 rospy.loginfo("Pub critical signal x, y = 1. sec %s", i)
                 self.change_bomber_mode.pose.position.x = 1
@@ -541,9 +563,9 @@ class MavrosOffboardPosctlTest_0(MavrosTestCommon):
                     #self.crit_sit.data[0]
                     self.id_drone = self.crit_sit.data[1]
                     self.__dict__['personal_land%d' % self.id_drone].pose.position.x = 1
-                    rospy.loginfo("=============")
-                    rospy.loginfo("LOW BATTERY!!!")
-                    rospy.loginfo("=============")
+                    rospy.logerr("=============")
+                    rospy.logerr("LOW BATTERY!!!")
+                    rospy.logerr("=============")
                     rospy.loginfo("YES VALUE!")
                     
                     time.sleep(2)
@@ -594,7 +616,8 @@ class MavrosOffboardPosctlTest_0(MavrosTestCommon):
                 time.sleep(2)
             else: 
                 check_status = False
-        rospy.loginfo("This critical situation: %s", self.situation)
+        rospy.logwarn("This critical situation: %s", self.situation)
+        self.low_battery_mode()
         rospy.loginfo("run mission")  
         self.damage_calculate()
         #self.global_path_flight_mode()
@@ -643,10 +666,34 @@ class MavrosOffboardPosctlTest_0(MavrosTestCommon):
                         rospy.loginfo("Try again!")
                         work1 = True
                 else :
-                    rospy.loginfo("===========")
-                    rospy.loginfo("RUN MISSION!")
-                    rospy.loginfo("===========")
-                    time.sleep(5)
+                    i = 1
+                    while (i == 1 and self.start_mission.data == True): 
+                        if(self.crit_sit.data[0] == -1):  
+                            rospy.loginfo("===========")
+                            rospy.loginfo ("RUN MISSION!")
+                            rospy.loginfo("===========")
+                            self.takeoff_mode()
+                            #TODO Takeoff to bomber
+                            time.sleep(5)
+                            i = 0
+                        elif (self.crit_sit.data[0] == 0 or self.crit_sit.data[0] == 1):
+                            rospy.logerr("ERROR: Land")
+                            self.landing_mode()
+                            time.sleep(5)
+                            i = 1
+                    rospy.logwarn("Start mission")
+                    #TODO FOLLOWER MODE START TO BOMBER
+                    for i in range(3):
+                        self.follower_mode.data = True
+                        rospy.loginfo("Pub to follow mode, %s sec", i)
+                        i += 1
+                        time.sleep(1)
+                    rospy.logwarn("Wait 25 sec and restart mission")
+                    time.sleep(25)
+                    #TODO Check target point
+                    self.global_path_flight_mode()
+
+
 
 if __name__ == '__main__':
     import rostest
