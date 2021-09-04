@@ -113,7 +113,7 @@ class MavrosOffboardPosctlTest_1(MavrosTestCommon):
         self.fuel_resource_bomber1 = Float64()
         self.fuel_consume_bomber1 = Float64()
 
-        self.radius = 1
+        self.radius = uv.swarm_parametr().radius
 
         self.pos_setpoint_pub = rospy.Publisher('/bomber1/mavros/setpoint_position/local', PoseStamped, queue_size=1)
         #-------------------------------Crisis Situation-------------------------------------

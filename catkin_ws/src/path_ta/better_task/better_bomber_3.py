@@ -113,8 +113,8 @@ class MavrosOffboardPosctlTest_3(MavrosTestCommon):
         self.fuel_resource_bomber3 = Float64()
         self.fuel_consume_bomber3 = Float64()
 
-        self.radius = 1
-
+        self.radius = uv.swarm_parametr().radius
+    
         self.pos_setpoint_pub = rospy.Publisher('/bomber3/mavros/setpoint_position/local', PoseStamped, queue_size=1)
         #-------------------------------Crisis Situation-------------------------------------
         self.cargo_bomber3_publisher = rospy.Publisher("/bomber3/cargo", Bool, queue_size=10)
@@ -311,7 +311,7 @@ class MavrosOffboardPosctlTest_3(MavrosTestCommon):
                         break
 
     def follower_mode(self):
-        rospy.loginfo("Follower\nExit from program")
+        rospy.loginfo("Follower")
         self.set_mode("OFFBOARD", 5)
         #work = False
         check =True
@@ -322,7 +322,7 @@ class MavrosOffboardPosctlTest_3(MavrosTestCommon):
                     scout_pose_x =  self.local_scout0_position.pose.position.x
                     scout_pose_y =  self.local_scout0_position.pose.position.y
                     scout_pose_z =  self.local_scout0_position.pose.position.z # test
-                    self.reach_position(int(scout_pose_x), int(scout_pose_y) + 2, int(scout_pose_z) - 2, 50) # X, Y, Z
+                    self.reach_position(int(scout_pose_x), int(scout_pose_y) - 2, int(scout_pose_z) - 2, 50) # X, Y, Z
                     rospy.loginfo("local pos x: %s and pos y: %s ", scout_pose_x, scout_pose_y)
                     if (self.personal_land.pose.position.x == 1):
                         self.scout0_check.pose.position.x = 1
@@ -392,7 +392,7 @@ class MavrosOffboardPosctlTest_3(MavrosTestCommon):
     def test_posctl(self):
         """Send messages for crisis situation"""
         self.cargo_bomber3.data = True
-        self.fuel_resource_bomber3.data = 0.14
+        self.fuel_resource_bomber3.data = 0.28
         self.fuel_consume_bomber3.data = 0.8
 
         """Test offboard position control"""

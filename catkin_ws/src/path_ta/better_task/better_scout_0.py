@@ -123,6 +123,7 @@ class swarm_parametr(object):
             #  (23,25,10)
             #  )
         self.altutude_height = 20 
+        self.radius = 30
         #self.positions = ((int(x), int(y), 10),(int(x), int(y), 10))
 
 class MavrosOffboardPosctlTest_0(MavrosTestCommon):
@@ -142,8 +143,8 @@ class MavrosOffboardPosctlTest_0(MavrosTestCommon):
         self.change_bomber_mode= PoseStamped()
         self.check_battery_scout = Float64()
         self.follower_mode = Bool()
-        self.radius = 30
-        #armed_scout0 = State()
+        self.radius = swarm_parametr().radius
+
         for i in range(1, 20):
             self.__dict__['personal_land%d' % i] = PoseStamped()
 
@@ -284,7 +285,7 @@ class MavrosOffboardPosctlTest_0(MavrosTestCommon):
 
         print("======================= PRINT")
         rospy.loginfo("======================= loginfo")
-
+        self.low_battery_mode()
         """timeout(int): seconds"""
         # set a position setpoint
         self.pos.pose.position.x = x
@@ -307,6 +308,7 @@ class MavrosOffboardPosctlTest_0(MavrosTestCommon):
         rate = rospy.Rate(loop_freq)
         reached = False
         for i in xrange(timeout * loop_freq):
+            self.low_battery_mode()
             if self.is_at_position(self.pos.pose.position.x,
                                    self.pos.pose.position.y,
                                    self.pos.pose.position.z, self.radius):
@@ -460,6 +462,7 @@ class MavrosOffboardPosctlTest_0(MavrosTestCommon):
                         rospy.logwarn("Target Find")
                     rospy.loginfo("Total damage: %s, Upper damage: %s", self.total_damage, self.UPPER_DAMAGE_LIMIT)
                     self.reach_position(positions[i][0], positions[i][1], takeoff_height, 99999) # X, Y, Z
+                    time.sleep(1)
                     rospy.loginfo("%s" %(i))
                     if (i+1 == len(positions)):
                         work0 = False
@@ -692,8 +695,6 @@ class MavrosOffboardPosctlTest_0(MavrosTestCommon):
                     time.sleep(25)
                     #TODO Check target point
                     self.global_path_flight_mode()
-
-
 
 if __name__ == '__main__':
     import rostest

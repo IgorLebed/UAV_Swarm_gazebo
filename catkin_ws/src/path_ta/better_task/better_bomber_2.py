@@ -109,17 +109,17 @@ class MavrosOffboardPosctlTest_2(MavrosTestCommon):
         super(MavrosOffboardPosctlTest_2, self).setUp()
 
         self.pos = PoseStamped()
-        self.cargo_bomber1 = Bool()
-        self.fuel_resource_bomber1 = Float64()
-        self.fuel_consume_bomber1 = Float64()
+        self.cargo_bomber2 = Bool()
+        self.fuel_resource_bomber2 = Float64()
+        self.fuel_consume_bomber2 = Float64()
 
-        self.radius = 1
-
+        self.radius = uv.swarm_parametr().radius
+    
         self.pos_setpoint_pub = rospy.Publisher('/bomber2/mavros/setpoint_position/local', PoseStamped, queue_size=1)
         #-------------------------------Crisis Situation-------------------------------------
-        self.cargo_bomber1_publisher = rospy.Publisher("/bomber2/cargo", Bool, queue_size=10)
-        self.fuel_resource_bomber1_publisher = rospy.Publisher("/bomber2/fuel_resource", Float64, queue_size=10)
-        self.fuel_consume_bomber1_publisher = rospy.Publisher("/bomber2/fuel_consume", Float64, queue_size=10)
+        self.cargo_bomber2_publisher = rospy.Publisher("/bomber2/cargo", Bool, queue_size=10)
+        self.fuel_resource_bomber2_publisher = rospy.Publisher("/bomber2/fuel_resource", Float64, queue_size=10)
+        self.fuel_consume_bomber2_publisher = rospy.Publisher("/bomber2/fuel_consume", Float64, queue_size=10)
 
         # send setpoints in seperate thread to better prevent failsafe
         self.pos_thread = Thread(target=self.send_pos, args=())
@@ -229,7 +229,7 @@ class MavrosOffboardPosctlTest_2(MavrosTestCommon):
     def send_cargo(self):
         rate = rospy.Rate(10)  # Hz
         while not rospy.is_shutdown():
-            self.cargo_bomber1_publisher.publish(self.cargo_bomber1)
+            self.cargo_bomber2_publisher.publish(self.cargo_bomber2)
             try:  # prevent garbage in console output when thread is killed
                 rate.sleep()
             except rospy.ROSInterruptException:
@@ -238,7 +238,7 @@ class MavrosOffboardPosctlTest_2(MavrosTestCommon):
     def send_fuel_resource(self):
         rate = rospy.Rate(10)  # Hz
         while not rospy.is_shutdown():
-            self.fuel_resource_bomber1_publisher.publish(self.fuel_resource_bomber1)
+            self.fuel_resource_bomber2_publisher.publish(self.fuel_resource_bomber2)
             try:  # prevent garbage in console output when thread is killed
                 rate.sleep()
             except rospy.ROSInterruptException:
@@ -247,7 +247,7 @@ class MavrosOffboardPosctlTest_2(MavrosTestCommon):
     def send_fuel_consume(self):
             rate = rospy.Rate(10)  # Hz
             while not rospy.is_shutdown():
-                self.fuel_consume_bomber1_publisher.publish(self.fuel_consume_bomber1)
+                self.fuel_consume_bomber2_publisher.publish(self.fuel_consume_bomber2)
                 try:  # prevent garbage in console output when thread is killed
                     rate.sleep()
                 except rospy.ROSInterruptException:
@@ -391,9 +391,9 @@ class MavrosOffboardPosctlTest_2(MavrosTestCommon):
     #
     def test_posctl(self):
         """Send messages for crisis situation"""
-        self.cargo_bomber1.data = True
-        self.fuel_resource_bomber1.data = 0.28
-        self.fuel_consume_bomber1.data = 0.8
+        self.cargo_bomber2.data = True
+        self.fuel_resource_bomber2.data = 0.28
+        self.fuel_consume_bomber2.data = 0.8
 
         """Test offboard position control"""
         self.log_topic_vars()
