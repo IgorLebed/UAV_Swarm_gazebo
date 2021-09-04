@@ -109,7 +109,7 @@ class swarm_parametr(object):
 
         #x = MavrosTestCommon().goal_pose_x
         #y = MavrosTestCommon().goal_pose_y
-        with open("UAV_Swarm_gazebo/catkin_ws/src/path_planning/scripts/path_global_wind.txt", "r") as ins:
+        with open("/home/defender/UAV_Swarm_gazebo/catkin_ws/src/path_ta/better_task/path_global_wind.txt", "r") as ins:
             path_cpp = []
             for line in ins:
                 path_cpp.append([float(line) for line in line.split()])# here send a list path_cpp
@@ -437,7 +437,7 @@ class MavrosOffboardPosctlTest_0(MavrosTestCommon):
                     self.wait_for_landed_state(mavutil.mavlink.MAV_LANDED_STATE_ON_GROUND, 45, 0)
                 else:
                     rospy.loginfo("Total damage: %s, Upper damage: %s", self.total_damage, self.UPPER_DAMAGE_LIMIT)
-                    self.reach_position(positions[i][0], positions[i][1], takeoff_height, 99999) # X, Y, Z
+                    self.reach_position(positions[i][0], positions[i][1], takeoff_height, 300) # X, Y, Z
                     rospy.loginfo("%s" %(i))
                     if (i+1 == len(positions)):
                         work0 = False
@@ -472,7 +472,7 @@ class MavrosOffboardPosctlTest_0(MavrosTestCommon):
                     rospy.loginfo("This is number!")
                     rospy.loginfo("Goal pose: x=%s and y=%s", str(self.goal_pose_x), str(self.goal_pose_y))  
                     takeoff_height = 15
-                    self.reach_position(int(self.goal_pose_x), int(self.goal_pose_y), takeoff_height, 30)
+                    self.reach_position(int(self.goal_pose_x), int(self.goal_pose_y), takeoff_height, 300)
                     self.goal_pose_x = None
                     self.goal_pose_y = None
                     time.sleep(2)
