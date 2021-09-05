@@ -2,7 +2,7 @@
 
 ## Introduction
 
-## Properation
+## Preparation
 ```
 cd $HOME
 git clone https://github.com/IgorLebed/UAV_Swarm_gazebo.git --recursive
