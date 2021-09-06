@@ -49,4 +49,7 @@ roslaunch px4 multi_plane_line.launch vehicle:=ral_x6 input:=4
 source ~/UAV_Swarm_gazebo/catkin_ws/devel/setup.bash
 rosrun path_ta better_scout_0.py
 ```
-
+```
+source ~/UAV_Swarm_gazebo/catkin_ws/devel/setup.bash
+rosrun path_ta better_bomber_1.py
+```
