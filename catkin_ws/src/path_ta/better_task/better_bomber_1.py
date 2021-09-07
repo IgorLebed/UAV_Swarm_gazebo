@@ -165,6 +165,15 @@ class MavrosOffboardPosctlTest_1(MavrosTestCommon):
     #
     # ---------------------------Helper methods---------------------------
     #
+    def orientation_yaw(self, x_1, y_1, x_2, y_2):
+        yaw = (y_2 - y_1)/(x_2 - x_1)
+        if (x_1 > x_2):
+            ori_yaw_ = math.atan(yaw)
+            ori_yaw = ori_yaw_ + math.pi 
+        else: 
+            ori_yaw = math.atan(yaw)
+        return ori_yaw 
+
     def is_at_position(self, x, y, z, offset):
         """offset: meters"""
         rospy.logdebug(
@@ -195,8 +204,8 @@ class MavrosOffboardPosctlTest_1(MavrosTestCommon):
                    self.local_position.pose.position.z))
 
         # For demo purposes we will lock yaw/heading to north.
-        yaw_degrees = 0  # North
-        yaw = math.radians(yaw_degrees)
+
+        yaw = self.orientation_yaw(self.local_position.pose.position.x, self.local_position.pose.position.y, x, y)
         quaternion = quaternion_from_euler(0, 0, yaw)
         self.pos.pose.orientation = Quaternion(*quaternion)
 
