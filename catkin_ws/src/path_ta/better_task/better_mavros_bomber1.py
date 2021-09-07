@@ -14,7 +14,7 @@ from rospy.exceptions import ROSInternalException
 from sensor_msgs.msg import NavSatFix, Imu
 from six.moves import xrange
 from geometry_msgs.msg import Point as P
-from std_msgs.msg import Float32, Int64MultiArray
+from std_msgs.msg import Float32, Int64MultiArray, Bool
 
 class MavrosTestCommon(unittest.TestCase):
     goal_pose_x = None
@@ -46,6 +46,8 @@ class MavrosTestCommon(unittest.TestCase):
         self.state = State()
         self.mav_type = None
         self.target_sub = P()
+        self.start_mission = Bool()
+        self.scout0_follower_mode = Bool()
         self.sub_topics_ready = {key:False for key in ['alt',
          'ext_state',
          'global_pos',
@@ -59,7 +61,9 @@ class MavrosTestCommon(unittest.TestCase):
          'scout0_state',
          'scout0_check',
          'damage',
-         'personal_land']}
+         'personal_land',
+         'scout0_start_mission',
+         'scout0_follower_mode']}
         service_timeout = 30
         rospy.loginfo('waiting for ROS services')
         try:
@@ -93,6 +97,8 @@ class MavrosTestCommon(unittest.TestCase):
         self.scout0_check_sub = rospy.Subscriber('/scout0/mavros/check_mission', PoseStamped, self.scout0_check_callback)
         self.def_prob_sub = rospy.Subscriber('/bomber1/damage', Float32, self.damage_callback)
         self.personal_land_sub = rospy.Subscriber('/bomber1/mavros/personal_land/check_mission', PoseStamped, self.personal_land_callback)
+        self.start_mission_sub = rospy.Subscriber('/scout0/start_mission', Bool, self.start_mission_callback)
+        self.follower_mode_sub = rospy.Subscriber('/scout0/follower_mode', Bool, self.follower_callback)
         #---
         return
 
@@ -114,6 +120,17 @@ class MavrosTestCommon(unittest.TestCase):
         self.personal_land = data
         if not self.sub_topics_ready['personal_land']:
             self.sub_topics_ready['personal_land'] = True
+    
+    def start_mission_callback(self, data):
+        self.start_mission = data
+        if not self.sub_topics_ready['scout0_start_mission']:
+            self.sub_topics_ready['scout0_start_mission'] = True
+    
+    def follower_callback(self, data):
+        self.scout0_follower_mode = data
+        if not self.sub_topics_ready['scout0_follower_mode']:
+            self.sub_topics_ready['scout0_follower_mode'] = True
+    
     #
     # --------------Standart_Callback------------
     #

@@ -258,7 +258,7 @@ if __name__ == "__main__":
 	bomber3 = UAV("ralx6", "bomber", 3)
 
 	uavs = [scout0, bomber1, bomber2, bomber3]
-	#uavs = [scout0, bomber1]
+	#uavs = [scout0]
 
 	scout0.fuel_resource = scout0.fuel_resource_subscribe.data
 	scout0.fuel_consume = scout0.fuel_consume_subscribe.data

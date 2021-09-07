@@ -50,6 +50,7 @@ class MavrosTestCommon(unittest.TestCase):
         self.battery = Float32()
         self.crit_sit = Int64MultiArray()
         self.start_mission = Bool()
+        self.target_find = Bool()
 
         self.state_msg = ModelState()
         self.sub_topics_ready = {key:False for key in ['alt',
@@ -65,7 +66,8 @@ class MavrosTestCommon(unittest.TestCase):
          'damage',
          'battery',
          'crit_sit',
-         'scout0_start_mission']}
+         'scout0_start_mission',
+         'target_find']}
         service_timeout = 30
         rospy.loginfo('waiting for ROS services')
         try:
@@ -103,6 +105,7 @@ class MavrosTestCommon(unittest.TestCase):
         self.battery_sub = rospy.Subscriber('/scout0/battery', Float32, self.battery_callback)
         self.crit_sit_info_sub = rospy.Subscriber('/critical_status_info', Int64MultiArray, self.crit_sit_info_callback)
         self.start_mission_sub = rospy.Subscriber('/scout0/start_mission', Bool, self.start_mission_callback)
+        self.target_find_sub = rospy.Subscriber('/scout0/target_find', Bool, self.target_find_callback)
         return
 
     def tearDown(self):
@@ -138,6 +141,11 @@ class MavrosTestCommon(unittest.TestCase):
         self.start_mission = data
         if not self.sub_topics_ready['scout0_start_mission']:
             self.sub_topics_ready['scout0_start_mission'] = True
+    
+    def target_find_callback(self, data):
+        self.target_find = data
+        if not self.sub_topics_ready['target_find']:
+            self.sub_topics_ready['target_find'] = True
     #
     # --------------Standart_Callback------------
     #

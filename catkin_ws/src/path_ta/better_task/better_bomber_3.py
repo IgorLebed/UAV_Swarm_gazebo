@@ -114,7 +114,7 @@ class MavrosOffboardPosctlTest_3(MavrosTestCommon):
         self.fuel_consume_bomber3 = Float64()
 
         self.radius = uv.swarm_parametr().radius
-    
+
         self.pos_setpoint_pub = rospy.Publisher('/bomber3/mavros/setpoint_position/local', PoseStamped, queue_size=1)
         #-------------------------------Crisis Situation-------------------------------------
         self.cargo_bomber3_publisher = rospy.Publisher("/bomber3/cargo", Bool, queue_size=10)
@@ -310,7 +310,7 @@ class MavrosOffboardPosctlTest_3(MavrosTestCommon):
                         work0 = False
                         break
 
-    def follower_mode(self):
+    def follower_mode(self): 
         rospy.loginfo("Follower")
         self.set_mode("OFFBOARD", 5)
         #work = False
@@ -322,12 +322,19 @@ class MavrosOffboardPosctlTest_3(MavrosTestCommon):
                     scout_pose_x =  self.local_scout0_position.pose.position.x
                     scout_pose_y =  self.local_scout0_position.pose.position.y
                     scout_pose_z =  self.local_scout0_position.pose.position.z # test
-                    self.reach_position(int(scout_pose_x), int(scout_pose_y) - 2, int(scout_pose_z) - 2, 50) # X, Y, Z
+                    self.reach_position(int(scout_pose_x) + 2, int(scout_pose_y), int(scout_pose_z) - 2, 50) # X, Y, Z
                     rospy.loginfo("local pos x: %s and pos y: %s ", scout_pose_x, scout_pose_y)
                     if (self.personal_land.pose.position.x == 1):
                         self.scout0_check.pose.position.x = 1
                         self.scout0_check.pose.position.y = 1
                         self.crisis_mode()
+                        check = False
+                        break
+                    if (self.scout0_follower_mode.data == False):
+                        self.scout0_check.pose.position.x = 1
+                        self.scout0_check.pose.position.y = 1
+                        rospy.logwarn("False follower mode!!!")
+                        self.rtl_mode()
                         check = False
                         break
                     #time.sleep(0.3)
@@ -382,8 +389,8 @@ class MavrosOffboardPosctlTest_3(MavrosTestCommon):
         rospy.loginfo("TAKEOFF MODE!!!")
         rospy.loginfo("=============")
         self.set_arm(True, 5)
-        self.set_mode("AUTO.TAKEOFF", 5)
-        #self.reach_position(int(self.local_position.pose.position.x), int(self.local_position.pose.position.x), 5, 30)
+        self.set_mode("OFFBOARD", 5)
+        self.reach_position(int(self.local_position.pose.position.x), int(self.local_position.pose.position.x), 10, 30)
         time.sleep(5)
         work1 = False
     #
@@ -392,7 +399,7 @@ class MavrosOffboardPosctlTest_3(MavrosTestCommon):
     def test_posctl(self):
         """Send messages for crisis situation"""
         self.cargo_bomber3.data = True
-        self.fuel_resource_bomber3.data = 0.28
+        self.fuel_resource_bomber3.data = 0.2
         self.fuel_consume_bomber3.data = 0.8
 
         """Test offboard position control"""
@@ -403,38 +410,75 @@ class MavrosOffboardPosctlTest_3(MavrosTestCommon):
         rospy.loginfo("This is boomber")
 
         work = True
-        while (work == True):
-            self.info_mode()
+        end_mission_mode = 0
+        while (work == True):   
             try:
-                rospy.loginfo("Input: ")
-                exit_p_num = int(raw_input())
-                rospy.loginfo("This is number: %s", exit_p_num) 
+                if self.start_mission.data == False:
+                    self.info_mode()
+                    rospy.loginfo("Input: ")
+                    exit_p_num = int(raw_input())
+                    rospy.loginfo("This is number: %s", exit_p_num)
+                    if (self.personal_land.pose.position.x == 1): 
+                        rospy.logwarn("Low battery!")
+                        self.crisis_mode()
+                else:
+                    rospy.loginfo("LOADING...") 
             except ValueError:
                 rospy.loginfo("This is not num!")
                 work = True
             else:
-                if (exit_p_num == 1):
-                    self.follower_mode()
-                elif (exit_p_num == 2):
-                    self.target_point_mode()
-                elif (exit_p_num == 3):
-                    self.landing_mode()
-                elif (exit_p_num == 4):
-                    self.rtl_mode()
-                elif (exit_p_num == 5):
-                    self.takeoff_mode()    
-                elif (exit_p_num == 9):
-                    work = False
-                    break
-                elif (exit_p_num != 1 or
-                      exit_p_num != 2 or 
-                      exit_p_num != 3 or
-                      exit_p_num != 4 or
-                      exit_p_num != 5 or 
-                      exit_p_num != 9
-                      ):
-                    rospy.loginfo("Try again!")
-                    work = True
+                if self.start_mission.data == False:
+                    try:
+                        if (exit_p_num == 1):
+                            self.follower_mode()
+                        elif (exit_p_num == 2):
+                            self.target_point_mode()
+                        elif (exit_p_num == 3):
+                            self.landing_mode()
+                        elif (exit_p_num == 4):
+                            self.rtl_mode()
+                        elif (exit_p_num == 5):
+                            self.takeoff_mode()    
+                        elif (exit_p_num == 9):
+                            work = False
+                            break
+                        elif (exit_p_num != 1 or
+                            exit_p_num != 2 or 
+                            exit_p_num != 3 or
+                            exit_p_num != 4 or
+                            exit_p_num != 5 or 
+                            exit_p_num != 9
+                            ):
+                            rospy.loginfo("Try again!")
+                            work = True               
+                    except:
+                        exit_p_num = f
+                while (self.start_mission.data == True and end_mission_mode == 0):
+                    rospy.logwarn("Mission mode")
+                    self.set_arm(True, 5)
+                    if (self.scout0_follower_mode.data == False or self.scout0_follower_mode.data == True):
+                        f = 0
+                        self.takeoff_mode()
+                        while (self.scout0_follower_mode.data == False):
+                            if (f>30):
+                                rospy.logerr("Connection denied")
+                                self.set_mode("AUTO.LAND", 5)
+                                break
+                            rospy.logwarn("Wait conection with scout")
+                            f += 1
+                            time.sleep(1)
+                        exit_follower_mode = 1
+                        if (self.scout0_follower_mode.data == True and exit_follower_mode == 1):
+                            self.follower_mode()
+                            if (self.scout0_check.pose.position.x == 1 or self.scout0_check.pose.position.y == 1):
+                                exit_follower_mode = 0
+
+                    rospy.logerr("END Mission mow")        
+                    rospy.loginfo("=============")
+                    end_mission_mode = 1
+                    #time.sleep(10)
+                    
+
 
 
 if __name__ == '__main__':
