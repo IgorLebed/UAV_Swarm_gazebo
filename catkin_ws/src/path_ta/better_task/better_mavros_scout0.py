@@ -391,6 +391,8 @@ class MavrosTestCommon(unittest.TestCase):
                 self.fail(e)
 
         self.assertTrue(res.success, 'MAV_TYPE param get failed | timeout(seconds): {0}'.format(timeout))
+    
+    
     #---------Del_Sub_After_Critical_Damage-------
     """
     FIXME: Add all sub

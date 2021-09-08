@@ -48,7 +48,8 @@ class MavrosTestCommon(unittest.TestCase):
         self.target_sub = P()
         self.start_mission = Bool()
         self.scout0_follower_mode = Bool()
-        self.sub_topics_ready = {key:False for key in ['alt',
+        self.sub_topics_ready = {key:False for key in [
+         'alt',
          'ext_state',
          'global_pos',
          'home_pos',
@@ -81,6 +82,7 @@ class MavrosTestCommon(unittest.TestCase):
         self.set_mode_srv = rospy.ServiceProxy('/bomber1/mavros/set_mode', SetMode)
         self.wp_clear_srv = rospy.ServiceProxy('/bomber1/mavros/mission/clear', WaypointClear)
         self.wp_push_srv = rospy.ServiceProxy('/bomber1/mavros/mission/push', WaypointPush)
+        #-------------
         self.alt_sub = rospy.Subscriber('/bomber1/mavros/altitude', Altitude, self.altitude_callback)
         self.ext_state_sub = rospy.Subscriber('/bomber1/mavros/extended_state', ExtendedState, self.extended_state_callback)
         self.global_pos_sub = rospy.Subscriber('/bomber1/mavros/global_position/global', NavSatFix, self.global_position_callback)
@@ -130,7 +132,6 @@ class MavrosTestCommon(unittest.TestCase):
         self.scout0_follower_mode = data
         if not self.sub_topics_ready['scout0_follower_mode']:
             self.sub_topics_ready['scout0_follower_mode'] = True
-    
     #
     # --------------Standart_Callback------------
     #
@@ -187,8 +188,9 @@ class MavrosTestCommon(unittest.TestCase):
         self.state = data
         if not self.sub_topics_ready['state'] and data.connected:
             self.sub_topics_ready['state'] = True
-
+    #
     #----scout0 callback------
+    #
     def state_scout0_callback(self, data):
         #if self.scout0_state.armed != data.armed:
             #rospy.loginfo('armed scout0_state changed from {0} to {1}'.format(self.scout0_state.armed, data.armed))
@@ -211,7 +213,9 @@ class MavrosTestCommon(unittest.TestCase):
         self.scout0_check = data
         if not self.sub_topics_ready['scout0_check']:
             self.sub_topics_ready['scout0_check'] = True
-
+    #
+    # Helper methods
+    #
     def set_arm(self, arm, timeout):
         """arm: True to arm or False to disarm, timeout(int): seconds"""
         rospy.loginfo('setting FCU arm: {0}'.format(arm))
@@ -238,7 +242,6 @@ class MavrosTestCommon(unittest.TestCase):
                 self.fail(e)
 
         self.assertTrue(arm_set, 'failed to set arm | new arm: {0}, old arm: {1} | timeout(seconds): {2}'.format(arm, old_arm, timeout))
-
 
     def set_mode(self, mode, timeout):
         """mode: PX4 mode string, timeout(int): seconds"""

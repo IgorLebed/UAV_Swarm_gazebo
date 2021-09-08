@@ -76,9 +76,7 @@
 # The shebang of this file is currently Python2 because some
 # dependencies such as pymavlink don't play well with Python3 yet.
 from __future__ import division
-#from operator import pos
 from pickle import NONE
-#from re import template
 from sys import path
 import calculate_3d_point_coords as cp
 
@@ -114,17 +112,10 @@ class swarm_parametr(object):
             path_cpp = []
             for line in ins:
                 path_cpp.append([float(line) for line in line.split()])# here send a list path_cpp
-        self.positions = path_cpp
-            #  (10,10,10),
-            #  (11,13,10),
-            #  (12,15,10),
-            #  (13,18,10),
-            #  (16,21,10),
-            #  (19,23,10),
-            #  (23,25,10)
-            #  )
-        self.altutude_height = 20 
-        self.radius = 30
+        self.positions =( #path_cpp
+             (-895, -880, 50), (-895, -880, 50))
+        self.altutude_height = 50 
+        self.radius = 1
         #self.positions = ((int(x), int(y), 10),(int(x), int(y), 10))
 
 class MavrosOffboardPosctlTest_0(MavrosTestCommon):
@@ -309,7 +300,7 @@ class MavrosOffboardPosctlTest_0(MavrosTestCommon):
 
         # For demo purposes we will lock yaw/heading to north.
         yaw_degrees = self.orientation_yaw(self.local_position.pose.position.x, self.local_position.pose.position.y, x, y) 
-        yaw = yaw_degrees#math.radians(yaw_degrees)
+        yaw = yaw_degrees #math.radians(yaw_degrees)
         quaternion = quaternion_from_euler(0, 0, yaw)
         self.pos.pose.orientation = Quaternion(*quaternion)
 
@@ -511,7 +502,7 @@ class MavrosOffboardPosctlTest_0(MavrosTestCommon):
                     self.set_mode("OFFBOARD", 5)
                     rospy.loginfo("This is number!")
                     rospy.loginfo("Goal pose: x=%s and y=%s", str(self.goal_pose_x), str(self.goal_pose_y))  
-                    takeoff_height = 15
+                    takeoff_height = swarm_parametr().altutude_height
                     calculate_point_coords = cp.main(self.local_position.pose.position.x, self.local_position.pose.position.y, self.goal_pose_x, self.goal_pose_y)
                     local_pose_x = self.local_position.pose.position.x
                     local_pose_y = self.local_position.pose.position.y
@@ -612,6 +603,8 @@ class MavrosOffboardPosctlTest_0(MavrosTestCommon):
                     time.sleep(2)
                 else: 
                     check_status = False
+    
+    
     #
     # -----------------------Flight method----------------------------
     #
@@ -624,7 +617,7 @@ class MavrosOffboardPosctlTest_0(MavrosTestCommon):
         #self.damage_calculate()
         """Send messages for crisis situation"""
         self.cargo_scout0.data = True
-        self.fuel_resource_scout0.data = 0.3
+        self.fuel_resource_scout0.data = 0.8
         self.fuel_consume_scout0.data = 0.8
 
         self.takeoff_point.x, self.takeoff_point.y = 0, 0

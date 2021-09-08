@@ -113,9 +113,25 @@ class MavrosOffboardPosctlTest_3(MavrosTestCommon):
         self.fuel_resource_bomber3 = Float64()
         self.fuel_consume_bomber3 = Float64()
 
+
+        #test_ta
+
+        self.height = 40
+        self.curr_task_pos = (-880, -860, self.height )
+        self.prev_task_pos = (-880, -860, self.height )
+        self.home_pos = (-880, -860, self.height)
+        self.mission_done = False
+        self.idling = False
+
         self.radius = uv.swarm_parametr().radius
 
         self.pos_setpoint_pub = rospy.Publisher('/bomber3/mavros/setpoint_position/local', PoseStamped, queue_size=1)
+        #ta_pub
+        self.idle_pub = rospy.Publisher('/bomber3/uav2_task_bool', Bool, queue_size=1)
+        #ta_sub
+        self.mission_done_sub = rospy.Subscriber('/mission_bool', Bool, self.mission_done_callback)
+        self.task_pos_sub = rospy.Subscriber('/bomber3/uav2_curr_task', PoseStamped, self.task_pos_callback)
+        
         #-------------------------------Crisis Situation-------------------------------------
         self.cargo_bomber3_publisher = rospy.Publisher("/bomber3/cargo", Bool, queue_size=10)
         self.fuel_resource_bomber3_publisher = rospy.Publisher("/bomber3/fuel_resource", Float64, queue_size=10)
@@ -143,7 +159,30 @@ class MavrosOffboardPosctlTest_3(MavrosTestCommon):
 
         global takeoff_height
         takeoff_height = 2
-        
+
+
+
+    #
+    # ---------------------------Sub's methods---------------------------
+    #
+    def task_pos_callback(self, data):
+            x = data.pose.position.x
+            y = data.pose.position.y
+            z = data.pose.position.z
+            new_task = (x, y, z)
+            if self.curr_task_pos == new_task:
+                pass
+            else:
+                rospy.loginfo("received new task!")
+                self.prev_task_pos = self.curr_task_pos
+                self.curr_task_pos = new_task
+                self.idling = False
+
+    def mission_done_callback(self, data):
+        if data.data:
+            self.mission_done = True
+            rospy.loginfo("Received mission done from master!")
+    
     def tearDown(self):
         super(MavrosOffboardPosctlTest_3, self).tearDown()
     #
@@ -161,7 +200,6 @@ class MavrosOffboardPosctlTest_3(MavrosTestCommon):
                 rate.sleep()
             except rospy.ROSInterruptException:
                 pass
-
     #
     # ---------------------------Helper methods---------------------------
     #
@@ -188,7 +226,6 @@ class MavrosOffboardPosctlTest_3(MavrosTestCommon):
         return np.linalg.norm(desired - pos) < offset
 
     def reach_position(self, x, y, z, timeout):
-
         print("======================= PRINT")
         rospy.loginfo("======================= loginfo")
 
@@ -204,7 +241,6 @@ class MavrosOffboardPosctlTest_3(MavrosTestCommon):
                    self.local_position.pose.position.z))
 
         # For demo purposes we will lock yaw/heading to north.
-
         yaw = self.orientation_yaw(self.local_position.pose.position.x, self.local_position.pose.position.y, x, y)
         quaternion = quaternion_from_euler(0, 0, yaw)
         self.pos.pose.orientation = Quaternion(*quaternion)
@@ -219,6 +255,8 @@ class MavrosOffboardPosctlTest_3(MavrosTestCommon):
                                    self.pos.pose.position.z, self.radius):
                 rospy.loginfo("position reached | seconds: {0} of {1}".format(
                     i / loop_freq, timeout))
+                self.idle_pub.publish(True)
+                self.idling = True
                 reached = True
                 break
 
@@ -232,6 +270,13 @@ class MavrosOffboardPosctlTest_3(MavrosTestCommon):
             format(self.local_position.pose.position.x,
                    self.local_position.pose.position.y,
                    self.local_position.pose.position.z, timeout)))
+    
+    def check_task(self):
+        x = self.curr_task_pos[0]
+        y = self.curr_task_pos[1]
+        z = self.curr_task_pos[2]
+        if not self.is_at_position(x, y, z, self.radius):
+            self.idling = False  # get robot back to work
     #
     # Crisis situation-------------------------
     #
@@ -268,6 +313,7 @@ class MavrosOffboardPosctlTest_3(MavrosTestCommon):
         rospy.loginfo("Enter 3 AUTO.LAND")
         rospy.loginfo("Enter 4 AUTO.RTL")
         rospy.loginfo("Enter 5 AUTO.TAKEOFF")
+        rospy.loginfo("Enter 6 TASK_ALLOCATION")
         rospy.loginfo("Enter 9 Exit")   
     
     def crisis_mode(self):
@@ -402,13 +448,42 @@ class MavrosOffboardPosctlTest_3(MavrosTestCommon):
         self.reach_position(int(self.local_position.pose.position.x), int(self.local_position.pose.position.x), 10, 30)
         time.sleep(5)
         work1 = False
+    
+    def ta_mission(self):
+        #self.wait_for_topics(60)
+        #self.wait_for_landed_state(mavutil.mavlink.MAV_LANDED_STATE_ON_GROUND, 10, -1)
+
+        #self.log_topic_vars()
+        self.set_mode("OFFBOARD", 5)
+        self.set_arm(True, 5)
+
+        self.reach_position(0, 0, self.height, 1000)  # set takeoff height
+        rospy.loginfo("Height reached; waiting for mission")
+
+        while not self.mission_done:
+            if self.idling:
+                rospy.loginfo('Waiting for next task')
+                self.check_task()
+                # publish idling
+                self.idle_pub.publish(True)
+                rospy.sleep(1)
+            else:
+                self.reach_position(self.curr_task_pos[0], self.curr_task_pos[1], self.curr_task_pos[2], 1000)
+            if self.mission_done and self.idling:
+                rospy.loginfo('Mission completed! Landing now')
+                break
+
+        self.reach_position(-880, -860, self.height, 1000)  # returning to home location
+        self.set_mode("AUTO.LAND", 5)
+        self.wait_for_landed_state(mavutil.mavlink.MAV_LANDED_STATE_ON_GROUND, 45, 0)
+        self.set_arm(False, 5)
     #
     # -----------------------Flight method----------------------------
     #
     def test_posctl(self):
         """Send messages for crisis situation"""
         self.cargo_bomber3.data = True
-        self.fuel_resource_bomber3.data = 0.2
+        self.fuel_resource_bomber3.data = 0.8
         self.fuel_consume_bomber3.data = 0.8
 
         """Test offboard position control"""
@@ -447,15 +522,18 @@ class MavrosOffboardPosctlTest_3(MavrosTestCommon):
                         elif (exit_p_num == 4):
                             self.rtl_mode()
                         elif (exit_p_num == 5):
-                            self.takeoff_mode()    
+                            self.takeoff_mode()
+                        elif (exit_p_num == 6):
+                            self.ta_mission()     
                         elif (exit_p_num == 9):
                             work = False
                             break
                         elif (exit_p_num != 1 or
-                            exit_p_num != 2 or 
+                            exit_p_num != 2 or
                             exit_p_num != 3 or
                             exit_p_num != 4 or
-                            exit_p_num != 5 or 
+                            exit_p_num != 5 or
+                            exit_p_num != 6 or
                             exit_p_num != 9
                             ):
                             rospy.loginfo("Try again!")
@@ -486,9 +564,6 @@ class MavrosOffboardPosctlTest_3(MavrosTestCommon):
                     rospy.loginfo("=============")
                     end_mission_mode = 1
                     #time.sleep(10)
-                    
-
-
 
 if __name__ == '__main__':
     import rostest
