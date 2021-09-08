@@ -22,3 +22,6 @@
 [submodule "catkin_ws/src/uavis"]
 	path = catkin_ws/src/uavis
 	url = https://github.com/EliasShalnev/uavis.git
+[submodule "catkin_ws/src/target_dmg"]
+	path = catkin_ws/src/target_dmg
+	url = https://github.com/EliasShalnev/target_dmg
