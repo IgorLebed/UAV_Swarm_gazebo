@@ -35,7 +35,7 @@ Run ros node
 source ~/UAV_Swarm_gazebo/catkin_ws/devel/setup.bash
 rosrun takeoff_pkg takeoff_node
 ```
-### Multi
+### Multiple drone test run
 ```
 cd UAV_Swarm_gazebo/Autopilot/
 DONT_RUN=1 make px4_sitl_default gazebo
