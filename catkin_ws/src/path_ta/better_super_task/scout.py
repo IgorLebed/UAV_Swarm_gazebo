@@ -667,7 +667,7 @@ class MavrosOffboardPosctlTest_0(MavrosTestCommon):
                 if (self.start_mission.data == False):
                     self.info_mode()
                     rospy.loginfo("Input: ")
-                    self.exit_p_num = self.mode.data #self.input()
+                    self.exit_p_num = self.input()#self.mode.data #
                     rospy.loginfo("This is number: %s", self.exit_p_num)
                     self.low_battery_mode()
                 else:
@@ -736,6 +736,6 @@ class MavrosOffboardPosctlTest_0(MavrosTestCommon):
 
 if __name__ == '__main__':
     import rostest
-    rospy.init_node('multiply_node_23', anonymous=True)
+    rospy.init_node('multiply_node', anonymous=True)
     
     rostest.rosrun(PKG, 'mavros_offboard_posctl_test', MavrosOffboardPosctlTest_0)
