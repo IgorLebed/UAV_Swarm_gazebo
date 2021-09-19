@@ -9,7 +9,7 @@
     <arg name="scout_id" default="0"/>
 
     <param name = "id" value = "$(eval str(arg('id')))"/>
-    <param name = "scout_id" value = "$(eval str(arg('id')))"/>
+    <param name = "scout_id" value = "$(eval str(arg('scout_id')))"/>
     <node name="$(eval 'multiply_node_' + str(arg('id')))"  pkg="path_ta" type="bomber.py" output="screen"> 
     </node>
 </launch>
