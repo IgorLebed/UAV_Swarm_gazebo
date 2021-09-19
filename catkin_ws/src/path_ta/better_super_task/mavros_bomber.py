@@ -30,6 +30,7 @@ class MavrosTestCommon(unittest.TestCase):
     def setUp(self, uav_id, scout_id):
         self.uav_id = uav_id
         self.scout_id = scout_id
+        
         self.altitude = Altitude()
         self.extended_state = ExtendedState()
         self.global_position = NavSatFix()

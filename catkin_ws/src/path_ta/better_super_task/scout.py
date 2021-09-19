@@ -112,8 +112,8 @@ class swarm_parametr(object):
                 path_cpp.append([float(line) for line in line.split()])# here send a list path_cpp
         self.positions =( #path_cpp
              (-845, -830, 100), (-895, -880, 100))
-        self.altutude_height = 100 
-        self.radius = 1
+        self.altutude_height = 20 
+        self.radius = 15
         #self.positions = ((int(x), int(y), 10),(int(x), int(y), 10))
 
 class MavrosOffboardPosctlTest_0(MavrosTestCommon):
@@ -132,7 +132,8 @@ class MavrosOffboardPosctlTest_0(MavrosTestCommon):
         rospy.logwarn("id scout:%s", self.uav_id)
         
         super(MavrosOffboardPosctlTest_0, self).setUp(self.uav_id) 
-
+        self.takeoff_height = swarm_parametr().altutude_height
+        
         self.pos = PoseStamped()
         self.change_bomber_mode= PoseStamped()
         self.check_battery_scout = Float64()
@@ -154,7 +155,8 @@ class MavrosOffboardPosctlTest_0(MavrosTestCommon):
         self.pos_setpoint_pub = rospy.Publisher('/scout' + str(self.uav_id) + '/mavros/setpoint_position/local', PoseStamped, queue_size=1)
         self.check_pub = rospy.Publisher('/scout' + str(self.uav_id) + '/mavros/check_mission', PoseStamped, queue_size=1)
         self.follower_mode_pub = rospy.Publisher('/scout' + str(self.uav_id) + '/follower_mode', Bool, queue_size=1 )
-        
+        self.change_mode_is_available_pub = rospy.Publisher('/scout' + str(self.uav_id) + '/change_mode_is_available', Int64, queue_size=1) 
+
         for i in range(self.uav_id, self.uav_id + 20):
             self.__dict__['crit_sit_one_pub%d' % i] = rospy.Publisher('/bomber' + str(i) + '/mavros/personal_land/check_mission', PoseStamped, queue_size=1)
     
@@ -441,7 +443,7 @@ class MavrosOffboardPosctlTest_0(MavrosTestCommon):
     # -----------------------Flight mode's----------------------------
     #
     def global_path_flight_mode(self):
-        takeoff_height = swarm_parametr().altutude_height
+        #takeoff_height = swarm_parametr().altutude_height
         positions = swarm_parametr().positions
 
         self.set_mode("OFFBOARD", 5)
@@ -472,7 +474,7 @@ class MavrosOffboardPosctlTest_0(MavrosTestCommon):
                         #if (x == 0):#TODO Make a condition
                             #rospy.loginfo("End mission")
                     rospy.loginfo("Total damage: %s, Upper damage: %s", self.total_damage, self.UPPER_DAMAGE_LIMIT)
-                    self.reach_position(positions[i][0], positions[i][1], takeoff_height, 99999) # X, Y, Z
+                    self.reach_position(positions[i][0], positions[i][1], self.takeoff_height, 99999) # X, Y, Z
                     time.sleep(1)
                     rospy.loginfo("%s" %(i))
                     if (i+1 == len(positions)):
@@ -570,7 +572,9 @@ class MavrosOffboardPosctlTest_0(MavrosTestCommon):
         #self.set_mode("AUTO.TAKEOFF", 5)
         #time.sleep(5)
         self.set_mode("OFFBOARD", 5)
-        self.reach_position(int(self.local_position.pose.position.x), int(self.local_position.pose.position.x), 100, 99999)
+        self.reach_position(int(self.local_position.pose.position.x), 
+                            int(self.local_position.pose.position.x), 
+                                self.takeoff_height, 99999)
         self.low_battery_mode()
         time.sleep(5)
         #work1 = False
@@ -663,7 +667,7 @@ class MavrosOffboardPosctlTest_0(MavrosTestCommon):
         work1 = True                        # While true menu working and have you may change other flight mode, with the exeption 9 mode "exit"
         while (work1 == True):
             try:
-                rospy.Subscriber('scout'+ str(self.uav_id) +'/set_mode', Int64, self.mode_listener)
+                rospy.Subscriber('scout'+ str(self.uav_id) + '/set_mode', Int64, self.mode_listener)
                 if (self.start_mission.data == False):
                     self.info_mode()
                     rospy.loginfo("Input: ")

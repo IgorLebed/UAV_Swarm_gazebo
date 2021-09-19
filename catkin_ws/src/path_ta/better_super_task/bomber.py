@@ -105,8 +105,11 @@ class MavrosOffboardPosctlTest_1(MavrosTestCommon):
     FIXME: add flight path assertion (needs transformation from ROS frame to NED)
     """
     def setUp(self):
+        self.takeoff_height = uv.swarm_parametr().altutude_height
+
         self.uav_id = rospy.get_param('id')
         self.scout_id = rospy.get_param('scout_id')
+        
         super(MavrosOffboardPosctlTest_1, self).setUp(self.uav_id, self.scout_id)
 
         self.pos = PoseStamped()
@@ -155,8 +158,8 @@ class MavrosOffboardPosctlTest_1(MavrosTestCommon):
         self.fuel_consume_thread.daemon = True
         self.fuel_consume_thread.start()
 
-        global takeoff_height
-        takeoff_height = 2
+        #global takeoff_height
+        #takeoff_height = 2
         
     def tearDown(self):
         super(MavrosOffboardPosctlTest_1, self).tearDown()
@@ -321,7 +324,7 @@ class MavrosOffboardPosctlTest_1(MavrosTestCommon):
     #----------------------------Flight mode's-----------------------------
     #
     def glogal_path_flight(self):
-        takeoff_height = uv.swarm_parametr().altutude_height
+        #takeoff_height = uv.swarm_parametr().altutude_height
         positions = uv.swarm_parametr().positions
 
         self.set_mode("OFFBOARD", 5)
@@ -355,7 +358,7 @@ class MavrosOffboardPosctlTest_1(MavrosTestCommon):
                     self.wait_for_landed_state(mavutil.mavlink.MAV_LANDED_STATE_ON_GROUND, 45, 0)
                 else:
                     rospy.loginfo("Total damage: %s, Upper damage: %s", self.total_damage, self.UPPER_DAMAGE_LIMIT)
-                    self.reach_position(positions[i][0], positions[i][1], takeoff_height, 99999) # X, Y, Z
+                    self.reach_position(positions[i][0], positions[i][1], self.takeoff_height, 99999) # X, Y, Z
                     rospy.loginfo("%s" %(i))
                     if (i+1 == len(positions)):
                         work0 = False
@@ -373,7 +376,7 @@ class MavrosOffboardPosctlTest_1(MavrosTestCommon):
                     scout_pose_x =  self.local_scout0_position.pose.position.x
                     scout_pose_y =  self.local_scout0_position.pose.position.y
                     scout_pose_z =  self.local_scout0_position.pose.position.z # test
-                    self.reach_position(int(scout_pose_x) + 2, int(scout_pose_y), int(scout_pose_z) - 2, 50) # X, Y, Z
+                    self.reach_position(int(scout_pose_x), int(scout_pose_y), int(scout_pose_z) - 2, 50) # X, Y, Z
                     rospy.loginfo("local pos x: %s and pos y: %s ", scout_pose_x, scout_pose_y)
                     if (self.personal_land.pose.position.x == 1):
                         self.scout0_check.pose.position.x = 1
@@ -441,7 +444,7 @@ class MavrosOffboardPosctlTest_1(MavrosTestCommon):
         rospy.loginfo("=============")
         self.set_arm(True, 5)
         self.set_mode("OFFBOARD", 5)
-        self.reach_position(int(self.local_position.pose.position.x), int(self.local_position.pose.position.x), 60, 30)
+        self.reach_position(int(self.local_position.pose.position.x), int(self.local_position.pose.position.x), self.takeoff_height, 30)
         time.sleep(5)
         work1 = False
     
