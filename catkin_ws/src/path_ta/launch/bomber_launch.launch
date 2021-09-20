@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<launch>
+    <arg name="input" default="1"/>
+    <arg name="minus" default="1"/>
+    <arg name="nr" value="$(eval arg('input') - arg('minus'))"/>
+    
+    <arg name="id" default="1"/>
+    <arg name="scout_id" default="0"/>
+
+    <param name = "id" value = "$(eval str(arg('id')))"/>
+    <param name = "scout_id" value = "$(eval str(arg('scout_id')))"/>
+    <node name="$(eval 'multiply_node_' + str(arg('id')))"  pkg="path_ta" type="bomber.py" output="screen"> 
+    </node>
+</launch>
