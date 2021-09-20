@@ -492,8 +492,18 @@ class MavrosOffboardPosctlTest_1(MavrosTestCommon):
         self.log_topic_vars()
         #self.set_mode("OFFBOARD", 5)
         self.set_arm(True, 5)
-
         rospy.loginfo("This is boomber")
+
+        check_status = True
+        while check_status:
+            if(self.scout0_check.pose.position.y == 1): 
+                rospy.logwarn("No communication with the critical situations module")
+                self.set_arm(True, 4)
+                time.sleep(5)
+            else:
+                rospy.logwarn("Connection success")
+                time.sleep(1)
+                check_status = False
 
         work = True
         end_mission_mode = 0
@@ -510,7 +520,8 @@ class MavrosOffboardPosctlTest_1(MavrosTestCommon):
                         rospy.logwarn("Low battery!")
                         self.crisis_mode()
                 else:
-                    rospy.loginfo("LOADING...") 
+                    rospy.loginfo("LOADING...")
+                    time.sleep(2) 
             except ValueError:
                 rospy.loginfo("This is not num!")
                 work = True

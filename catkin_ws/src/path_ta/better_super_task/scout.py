@@ -648,13 +648,15 @@ class MavrosOffboardPosctlTest_0(MavrosTestCommon):
         while check_status:
             try: 
                 self.situation = self.crit_sit.data[0]
+                self.change_bomber_mode.pose.position.y = 0
                 rospy.loginfo("YES VALUE!")
                 time.sleep(2)
             except:
-                self.situation = NONE # TODO Change from NONE to None
+                self.situation = None
                 rospy.loginfo("NO VALUE!")
-                self.set_arm(True, 5)
-                time.sleep(2)
+                self.change_bomber_mode.pose.position.y = 1 
+                self.set_arm(True, 4)
+                time.sleep(5)
             else: 
                 check_status = False
         rospy.logwarn("This critical situation: %s", self.situation)
