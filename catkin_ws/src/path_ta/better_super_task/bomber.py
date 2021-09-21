@@ -128,10 +128,10 @@ class MavrosOffboardPosctlTest_1(MavrosTestCommon):
         self.change_mode_is_available_pub = rospy.Publisher('/bomber' + str(self.uav_id) + '/change_mode_is_available', Int64, queue_size=1)
         self.pos_setpoint_pub = rospy.Publisher('/bomber' + str(self.uav_id) + '/mavros/setpoint_position/local', PoseStamped, queue_size=1)
         #ta_pub
-        self.idle_pub = rospy.Publisher('/bomber' + str(self.uav_id) + '/uav0_task_bool', Bool, queue_size=1)
+        self.idle_pub = rospy.Publisher('/bomber' + str(self.uav_id) + '/task_bool', Bool, queue_size=1)
         #ta_sub
         self.mission_done_sub = rospy.Subscriber('/mission_bool', Bool, self.mission_done_callback)
-        self.task_pos_sub = rospy.Subscriber('/bomber' + str(self.uav_id) + '/uav0_curr_task', PoseStamped, self.task_pos_callback)
+        self.task_pos_sub = rospy.Subscriber('/bomber' + str(self.uav_id) + '/curr_task', PoseStamped, self.task_pos_callback)
         
         #-------------------------------Crisis Situation-------------------------------------
         self.cargo_bomber1_publisher = rospy.Publisher('/bomber' + str(self.uav_id) + '/cargo', Bool, queue_size=10)
@@ -385,10 +385,11 @@ class MavrosOffboardPosctlTest_1(MavrosTestCommon):
                         check = False
                         break
                     if (self.scout0_follower_mode.data == False):
-                        self.scout0_check.pose.position.x = 1
-                        self.scout0_check.pose.position.y = 1
+                        #TODO Testing this 
+                        #self.scout0_check.pose.position.x = 1
+                        #self.scout0_check.pose.position.y = 1
                         rospy.logwarn("False follower mode!!!")
-                        self.rtl_mode()
+                        #self.rtl_mode()
                         check = False
                         break
                     #time.sleep(0.3)
@@ -456,7 +457,8 @@ class MavrosOffboardPosctlTest_1(MavrosTestCommon):
         self.set_mode("OFFBOARD", 5)
         self.set_arm(True, 5)
 
-        self.reach_position(0, 0, self.height, 1000)  # set takeoff height
+        #self.reach_position(self.local_position.pose.position.x, 
+        #                    self.local_position.pose.position.y, self.takeoff_height, 1000)  #  self.height
         rospy.loginfo("Height reached; waiting for mission")
 
         while not self.mission_done:
@@ -469,10 +471,10 @@ class MavrosOffboardPosctlTest_1(MavrosTestCommon):
             else:
                 self.reach_position(self.curr_task_pos[0], self.curr_task_pos[1], self.curr_task_pos[2], 1000)
             if self.mission_done and self.idling:
-                rospy.loginfo('Mission completed! Landing now')
+                rospy.loginfo('Mission completed!')
                 break
 
-        self.reach_position(-920, -800, self.height, 1000)  # returning to home location
+        self.reach_position(-920, -800, self.height, 1000)  # returning to home location #TODO Write dynamic home position
         #self.set_mode("AUTO.LAND", 5)
         #self.wait_for_landed_state(mavutil.mavlink.MAV_LANDED_STATE_ON_GROUND, 45, 0)
         #self.set_arm(False, 5)
@@ -499,7 +501,7 @@ class MavrosOffboardPosctlTest_1(MavrosTestCommon):
             if(self.scout0_check.pose.position.y == 1): 
                 rospy.logwarn("No communication with the critical situations module")
                 self.set_arm(True, 4)
-                time.sleep(5)
+                time.sleep(3)
             else:
                 rospy.logwarn("Connection success")
                 time.sleep(1)
@@ -560,7 +562,8 @@ class MavrosOffboardPosctlTest_1(MavrosTestCommon):
                     self.set_arm(True, 5)
                     if (self.scout0_follower_mode.data == False or self.scout0_follower_mode.data == True):
                         f = 0
-                        self.takeoff_mode()
+                        for i in range(3):
+                            self.takeoff_mode()
                         while (self.scout0_follower_mode.data == False):
                             if (f>30):
                                 rospy.logerr("Connection denied")
@@ -570,11 +573,18 @@ class MavrosOffboardPosctlTest_1(MavrosTestCommon):
                             f += 1
                             time.sleep(1)
                         exit_follower_mode = 1
-                        if (self.scout0_follower_mode.data == True and exit_follower_mode == 1):
+                        while (self.scout0_follower_mode.data == True and exit_follower_mode == 1):
                             self.follower_mode()
                             if (self.scout0_check.pose.position.x == 1 or self.scout0_check.pose.position.y == 1):
                                 exit_follower_mode = 0
+                        rospy.logwarn("Start TA test mission")        
+                        self.ta_mission()
 
+                        exit_follower_mode = 1
+                        while (self.scout0_follower_mode.data == True and exit_follower_mode == 1):
+                            self.follower_mode()
+                            if (self.scout0_check.pose.position.x == 1 or self.scout0_check.pose.position.y == 1):
+                                exit_follower_mode = 0
                     rospy.logerr("END Mission mow")        
                     rospy.loginfo("=============")
                     end_mission_mode = 1

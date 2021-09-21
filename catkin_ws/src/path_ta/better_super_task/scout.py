@@ -547,17 +547,16 @@ class MavrosOffboardPosctlTest_0(MavrosTestCommon):
         check = True
         while (check == True):
             try:
-                if (self.exit_p_num == 4):
-                    self.set_mode("AUTO.RTL", 5)
-                    while (self.exit_p_num < 8):
-                        rospy.loginfo("Pub 1")
-                        self.change_bomber_mode.pose.position.x = 1 
-                        self.exit_p_num += 1
-                        time.sleep(1)
-                    check = False
+                self.set_mode("AUTO.RTL", 5)
+                for i in range(3):
+                    rospy.loginfo("Pub 1")
+                    self.change_bomber_mode.pose.position.x = 1 
+                    self.exit_p_num += 1
+                    time.sleep(1)
+                check = False
             except rospy.ROSInterruptException:
-                    self.set_mode("AUTO.LAND", 5)
-                    check = False 
+                self.set_mode("AUTO.LAND", 5)
+                check = False 
 
     def takeoff_mode(self):
         rospy.loginfo("=============")
@@ -589,7 +588,7 @@ class MavrosOffboardPosctlTest_0(MavrosTestCommon):
             rospy.logerr("LOW BATTERY!!!")
             rospy.logerr("=============")
             for i in range(1, 3):
-                rospy.loginfo("Pub critical signal x, y = 1. sec %s", i)
+                rospy.loginfo("Pub signal x, y = 1. sec %s", i)
                 self.change_bomber_mode.pose.position.x = 1
                 self.change_bomber_mode.pose.position.y = 1
                 time.sleep(1)
@@ -738,7 +737,43 @@ class MavrosOffboardPosctlTest_0(MavrosTestCommon):
                     #self.landing_mode()
                     #TODO Check target point
                     self.global_path_flight_mode()
-                    break
+
+                    self.set_mode("AUTO.LOITER", 5)
+                    for i in range(1, 3):
+                        rospy.loginfo("Exit follower mode! sec %s", i)
+                        self.follower_mode.data = False
+                        #rospy.loginfo("Pub signal x, y = 1. sec %s", i)
+                        #self.change_bomber_mode.pose.position.x = 1
+                        #self.change_bomber_mode.pose.position.y = 1
+                        time.sleep(1)
+                    time.sleep(5)
+
+                    for i in range(3):
+                        rospy.loginfo("Enter follower mode! sec %s", i)
+                        self.follower_mode.data = True
+                    bomber_massage = True # TODO Sub on bomber, while something like with....
+                    if (bomber_massage == True):
+                        for i in range(45):
+                            rospy.loginfo("Wait... Bombers while doesn't ending mission")
+                            time.sleep(2)     
+                            if (i > 45):                  #TEST!!!!!!!!!!
+                                bomber_massage = False    #TEST!!!!!!!!!!
+                    else:
+                        rospy.logwarn("End mission")
+                        for i in range(3):
+                            self.follower_mode.data = True
+                            rospy.loginfo("Pub to follow mode, %s sec", i)
+                            i += 1
+                            time.sleep(1)
+                        rospy.logwarn("Wait 10 sec")
+                        time.sleep(10)
+                    rospy.logwarn("RTL MODE")    
+                    self.set_mode("AUTO.RTL", 5)
+                    for i in range(3):
+                        rospy.logwarn("Mission End %s", i)
+                        self.start_mission.data = False
+
+
 
 if __name__ == '__main__':
     import rostest
