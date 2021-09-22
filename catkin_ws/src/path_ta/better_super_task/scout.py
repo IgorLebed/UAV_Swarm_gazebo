@@ -94,6 +94,7 @@ from tf.transformations import quaternion_from_euler
 
 from geometry_msgs.msg import PoseStamped, Quaternion , Point
 from std_msgs.msg import Header, Int64 ,Float64, Bool
+from gazebo_msgs.srv import DeleteModel
 
 from mavros_scout import MavrosTestCommon
 
@@ -285,11 +286,12 @@ class MavrosOffboardPosctlTest_0(MavrosTestCommon):
                         self.local_position.pose.position.z))
         return np.linalg.norm(desired - pos) < offset
 
-    def reach_position(self, x, y, z, timeout):
+    def reach_position(self, x, y, z, timeout, critical_param):
 
         print("======================= PRINT")
         rospy.loginfo("======================= loginfo")
-        self.low_battery_mode()
+        if critical_param == True:
+            self.low_battery_mode()
         """timeout(int): seconds"""
         # set a position setpoint
         self.pos.pose.position.x = x
@@ -312,7 +314,8 @@ class MavrosOffboardPosctlTest_0(MavrosTestCommon):
         rate = rospy.Rate(loop_freq)
         reached = False
         for i in xrange(timeout * loop_freq):
-            self.low_battery_mode()
+            if critical_param == True:
+                self.low_battery_mode()
             if self.is_at_position(self.pos.pose.position.x,
                                    self.pos.pose.position.y,
                                    self.pos.pose.position.z, self.radius):
@@ -331,6 +334,13 @@ class MavrosOffboardPosctlTest_0(MavrosTestCommon):
                    self.local_position.pose.position.y,
                    self.local_position.pose.position.z, timeout)))
 
+    def delete_platform(self):
+        # DELETE PLATFORM
+        rospy.loginfo("DELETING PLATFORM")
+        del_model = rospy.ServiceProxy('/gazebo/delete_model', DeleteModel)
+        status = del_model("Platform"+ str(self.uav_id))
+        print("STATUS: " + str(status))
+    
     # Crisis situation-------------------------
     #
     def send_cargo(self):
@@ -474,7 +484,7 @@ class MavrosOffboardPosctlTest_0(MavrosTestCommon):
                         #if (x == 0):#TODO Make a condition
                             #rospy.loginfo("End mission")
                     rospy.loginfo("Total damage: %s, Upper damage: %s", self.total_damage, self.UPPER_DAMAGE_LIMIT)
-                    self.reach_position(positions[i][0], positions[i][1], self.takeoff_height, 99999) # X, Y, Z
+                    self.reach_position(positions[i][0], positions[i][1], self.takeoff_height, 1000, True) # X, Y, Z
                     time.sleep(1)
                     rospy.loginfo("%s" %(i))
                     if (i+1 == len(positions)):
@@ -517,14 +527,14 @@ class MavrosOffboardPosctlTest_0(MavrosTestCommon):
                         #TODO Need refactor!!!!!!
                         rospy.logerr("goal x %s, goal y %s", self.goal_pose_x, self.goal_pose_y)
                         time.sleep(5)
-                        self.reach_position(int(self.goal_pose_x), int(self.goal_pose_y), takeoff_height, 99999)
-                        self.reach_position(int(calculate_point_coords[0]), int(calculate_point_coords[1]), takeoff_height, 99999)
-                        self.reach_position(int(local_pose_x), int(local_pose_y), takeoff_height, 99999)
+                        self.reach_position(int(self.goal_pose_x), int(self.goal_pose_y), takeoff_height, 1000, True)
+                        self.reach_position(int(calculate_point_coords[0]), int(calculate_point_coords[1]), takeoff_height, 1000, True)
+                        self.reach_position(int(local_pose_x), int(local_pose_y), takeoff_height, 1000, True)
                         rospy.logerr("local x %s, local y %s", local_pose_x, local_pose_y)
                         rospy.logwarn("Calculate_3d_point_coords!!!!!!!!_______%s time there are 4", x) 
                         x += 1
                         time.sleep(2)   
-                    self.reach_position(int(self.goal_pose_x), int(self.goal_pose_y), takeoff_height, 99999)
+                    self.reach_position(int(self.goal_pose_x), int(self.goal_pose_y), takeoff_height, 1000, True)
                     
                     self.goal_pose_x = None
                     self.goal_pose_y = None
@@ -558,7 +568,7 @@ class MavrosOffboardPosctlTest_0(MavrosTestCommon):
                 self.set_mode("AUTO.LAND", 5)
                 check = False 
 
-    def takeoff_mode(self):
+    def takeoff_mode(self, height):
         rospy.loginfo("=============")
         rospy.loginfo("TAKEOFF MODE!!!")
         rospy.loginfo("=============")
@@ -568,14 +578,16 @@ class MavrosOffboardPosctlTest_0(MavrosTestCommon):
             i += 1
             time.sleep(1)
         self.set_arm(True, 5)
-        #self.set_mode("AUTO.TAKEOFF", 5)
-        #time.sleep(5)
         self.set_mode("OFFBOARD", 5)
-        self.reach_position(int(self.local_position.pose.position.x), 
-                            int(self.local_position.pose.position.x), 
-                                self.takeoff_height, 99999)
-        self.low_battery_mode()
-        time.sleep(5)
+        self.reach_position(int(self.local_position.pose.position.x),
+                            int(self.local_position.pose.position.y), 
+                            height, 1000, False)
+        try:
+            #rospy.logwarn("low bat mode")
+            self.low_battery_mode()
+        except:
+            rospy.logwarn("Critical module not connected!")  
+        #time.sleep(5)
         #work1 = False
 
     def low_battery_mode(self):
@@ -641,6 +653,7 @@ class MavrosOffboardPosctlTest_0(MavrosTestCommon):
         self.log_topic_vars()
         #self.set_mode("OFFBOARD", 5)
         #self.set_arm(True, 5)
+        self.takeoff_mode(self.takeoff_height)
         rospy.loginfo("This is scout")
 
         check_status = True
@@ -654,7 +667,7 @@ class MavrosOffboardPosctlTest_0(MavrosTestCommon):
                 self.situation = None
                 rospy.loginfo("NO VALUE!")
                 self.change_bomber_mode.pose.position.y = 1 
-                self.set_arm(True, 4)
+                #self.set_arm(True, 4)
                 time.sleep(5)
             else: 
                 check_status = False
@@ -695,7 +708,7 @@ class MavrosOffboardPosctlTest_0(MavrosTestCommon):
                     elif (self.exit_p_num == 4):
                         self.rtl_mode()
                     elif (self.exit_p_num == 5):
-                        self.takeoff_mode()    
+                        self.takeoff_mode(self.takeoff_height)    
                     elif (self.exit_p_num == 9):
                         work1 = False
                         break
@@ -716,7 +729,11 @@ class MavrosOffboardPosctlTest_0(MavrosTestCommon):
                             rospy.loginfo("===========")
                             rospy.loginfo ("RUN MISSION!")
                             rospy.loginfo("===========")
-                            self.takeoff_mode()
+                            self.takeoff_mode(self.takeoff_height)
+
+                            self.delete_platform()
+
+
                             time.sleep(5)
                             i = 0
                         elif (self.crit_sit.data[0] == 0 or self.crit_sit.data[0] == 1):
@@ -732,8 +749,8 @@ class MavrosOffboardPosctlTest_0(MavrosTestCommon):
                         rospy.loginfo("Pub to follow mode, %s sec", i)
                         i += 1
                         time.sleep(1)
-                    rospy.logwarn("Wait 10 sec")
-                    time.sleep(10)
+                    rospy.logwarn("Wait 30 sec")
+                    time.sleep(30)
                     #self.landing_mode()
                     #TODO Check target point
                     self.global_path_flight_mode()

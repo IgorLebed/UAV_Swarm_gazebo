@@ -93,6 +93,7 @@ from tf.transformations import quaternion_from_euler
 import time
 import scout as uv
 #import setpoint_listener as path_ta
+from gazebo_msgs.srv import DeleteModel
 
 
 class MavrosOffboardPosctlTest_1(MavrosTestCommon):
@@ -320,6 +321,13 @@ class MavrosOffboardPosctlTest_1(MavrosTestCommon):
         rospy.loginfo("LOW BATTERY!!!")
         rospy.loginfo("=============")
         self.rtl_mode()
+    
+    def delete_platform(self):
+        # DELETE PLATFORM
+        rospy.loginfo("DELETING PLATFORM")
+        del_model = rospy.ServiceProxy('/gazebo/delete_model', DeleteModel)
+        status = del_model("Platform"+ str(self.uav_id))
+        print("STATUS: " + str(status))
     #
     #----------------------------Flight mode's-----------------------------
     #
@@ -439,13 +447,15 @@ class MavrosOffboardPosctlTest_1(MavrosTestCommon):
         self.set_mode("AUTO.RTL", 5)
         work = False
     
-    def takeoff_mode(self):
+    def takeoff_mode(self, height):
         rospy.loginfo("=============")
         rospy.loginfo("TAKEOFF MODE!!!")
         rospy.loginfo("=============")
         self.set_arm(True, 5)
         self.set_mode("OFFBOARD", 5)
-        self.reach_position(int(self.local_position.pose.position.x), int(self.local_position.pose.position.x), self.takeoff_height, 30)
+        self.reach_position(int(self.local_position.pose.position.x), 
+                            int(self.local_position.pose.position.y), 
+                            height, 1000)
         time.sleep(5)
         work1 = False
     
@@ -493,18 +503,19 @@ class MavrosOffboardPosctlTest_1(MavrosTestCommon):
         """Test offboard position control"""
         self.log_topic_vars()
         #self.set_mode("OFFBOARD", 5)
-        self.set_arm(True, 5)
+        #self.set_arm(True, 5)
+        self.takeoff_mode(self.takeoff_height - 2)
         rospy.loginfo("This is boomber")
 
         check_status = True
         while check_status:
             if(self.scout0_check.pose.position.y == 1): 
                 rospy.logwarn("No communication with the critical situations module")
-                self.set_arm(True, 4)
-                time.sleep(3)
+                #self.set_arm(True, 4)
+                time.sleep(5)
             else:
                 rospy.logwarn("Connection success")
-                time.sleep(1)
+                time.sleep(2)
                 check_status = False
 
         work = True
@@ -539,7 +550,7 @@ class MavrosOffboardPosctlTest_1(MavrosTestCommon):
                         elif (exit_p_num == 4):
                             self.rtl_mode()
                         elif (exit_p_num == 5):
-                            self.takeoff_mode()
+                            self.takeoff_mode(self.takeoff_height - 2)
                         elif (exit_p_num == 6):
                             self.ta_mission()    
                         elif (exit_p_num == 9):
@@ -563,7 +574,10 @@ class MavrosOffboardPosctlTest_1(MavrosTestCommon):
                     if (self.scout0_follower_mode.data == False or self.scout0_follower_mode.data == True):
                         f = 0
                         for i in range(3):
-                            self.takeoff_mode()
+                            self.takeoff_mode(self.takeoff_height - 2)
+
+                        self.delete_platform()
+                            
                         while (self.scout0_follower_mode.data == False):
                             if (f>30):
                                 rospy.logerr("Connection denied")
