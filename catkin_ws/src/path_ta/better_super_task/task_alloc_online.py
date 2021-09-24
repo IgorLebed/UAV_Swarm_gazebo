@@ -6,6 +6,8 @@ from std_msgs.msg import String, Int32, Bool
 from geometry_msgs.msg import Pose, PoseStamped
 import random
 import numpy as np
+import os
+import json
 
 
 def generate_tasks(num_task, min_pos, max_pos, height):
@@ -15,24 +17,47 @@ def generate_tasks(num_task, min_pos, max_pos, height):
         task_list.append(task)
     return task_list
 
-task_list = [
-(-957.3915945077315, -855.0138749238104, 60),
-(-910.8959478922188, -895.5183857586235, 50),
-(-948.4347058273852, -921.3926183544099, 60),
-(-875.1556231221184, -947.2644253643230, 50),
-(-845.2041011163965, -858.3795844987035, 60),
-(-858.6145041380078, -861.4421726837754, 50),
-(-919.3042095946148, -895.0775583777577, 60),
-(-942.3035844964907, -844.3298955513164, 50),
-(-933.9325257679448, -922.8892891705036, 60),
-(-889.9556830069050, -887.7070486117154, 50)] 
+def generate_json(height):
+    json_data = []
+    task_list = []
+    x_arr = []
+    y_arr = []
+    if os.path.exists('/home/igor/UAV_Swarm_gazebo/catkin_ws/src/path_ta/json/Targets.json'):
+        with open('/home/igor/UAV_Swarm_gazebo/catkin_ws/src/path_ta/json/Targets.json', 'r') as d: 
+            json_data = json.load(d) 
+            target_point_arr = json_data.get('points')
+        for i in range(len(target_point_arr)):
+            target_point_arr_ = target_point_arr[i]
+            x = target_point_arr_[0]
+            y = target_point_arr_[1] 
+            x_arr.append(x)
+            y_arr.append(y)
+            centroid = [sum(x_arr) / len(x_arr), sum(y_arr) / len(y_arr)]
+            task = (x, y, height)
+            task_list.append(task)
+        return task_list
+    else:
+        print('####!!!!There is no file with targets!!!!####')
 
+# task_list = [
+# (-957.3915945077315, -855.0138749238104, 60),
+# (-910.8959478922188, -895.5183857586235, 50),
+# (-948.4347058273852, -921.3926183544099, 60),
+# (-875.1556231221184, -947.2644253643230, 50),
+# (-845.2041011163965, -858.3795844987035, 60),
+# (-858.6145041380078, -861.4421726837754, 50),
+# (-919.3042095946148, -895.0775583777577, 60),
+# (-942.3035844964907, -844.3298955513164, 50),
+# (-933.9325257679448, -922.8892891705036, 60),
+# (-889.9556830069050, -887.7070486117154, 50)] 
 
 num_task = 4
 num_robots = 2
 max_pose = 200
 min_pos = -200
+
 # task_list = generate_tasks(num_task, min_pos, max_pose, 20)  # randomly generate tasks
+task_list = generate_json(60)
 # task_list = [(-9, -9, 20), (-9, 9, 20), (9, -9, 20), (9, 9, 20), (-4, -4, 20), (4, -4, 20), (-4, 4, 20), (4, 4, 20),
 #              (0, 10, 20), (10, 0, 20), (0, -10, 20), (-10, 0, 20)]
 # task_list = [
